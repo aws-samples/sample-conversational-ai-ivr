@@ -1,5 +1,7 @@
 # Lambda Handler Mapping Reference
 
+This document maps each Lambda function to its correct handler configuration.
+
 | Lambda Function | Handler | Source File | Runtime |
 |----------------|---------|-------------|---------|
 | get-call-attributes | `index.lambda_handler` | `index.py` | python3.12 |
@@ -19,7 +21,10 @@
 | update-violation-balance | `index.lambda_handler` | `index.py` | python3.12 |
 | save-and-restore-session | `index.lambda_handler` | `index.py` | python3.12 |
 
-## Important
-- Handler = `<module_name>.` where module = filename without `.py`/`.js`
-- CloudFormation `ZipFile` creates the file using the module name from handler
-- Only connect-assistant-update-session uses Node.js; all others use Python 3.12
+---
+
+## Important Notes
+
+- Handler format: `<module_name>.` where module name = filename without `.py`/`.js`
+- CloudFormation `ZipFile` inline code creates the file using the module name from the handler
+- Only `connect-assistant-update-session` uses Node.js; all others use Python 3.12
