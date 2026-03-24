@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Nested - Bootstrap: read API key value from API Gateway, create AgentCore API key credential provider."
+
+Parameters:
+  InstanceAlias:
+    Type: String
+  ApiGatewayApiKeyId:
+    Type: String
+  BootstrapCodeS3Bucket:
+    Type: String
+  BootstrapCodeS3Key:
+    Type: String
+
+Resources:
+  BootstrapFnRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BootstrapPermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: apigateway:GET
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - bedrock-agentcore:*
+                  - bedrock-agentcore-control:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:CreateSecret
+                  - secretsmanager:DeleteSecret
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:PutSecretValue
+                  - secretsmanager:UpdateSecret
+                  - secretsmanager:DescribeSecret
+                Resource: "*"
+
+  BootstrapFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt BootstrapFnRole.Arn
+      Timeout: 120
+      Code:
+        S3Bucket: !Ref BootstrapCodeS3Bucket
+        S3Key: !Ref BootstrapCodeS3Key
+
+  BootstrapCustom:
+    Type: Custom::BootstrapCredentialProvider
+    Properties:
+      ServiceToken: !GetAtt BootstrapFn.Arn
+      ApiGatewayApiKeyId: !Ref ApiGatewayApiKeyId
+      ProviderName: !Sub "${InstanceAlias}-apigw-api-key-provider"
+
+Outputs:
+  ApiKeyCredentialProviderArn:
+    Value: !GetAtt BootstrapCustom.ApiKeyCredentialProviderArn

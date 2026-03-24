@@ -1,0 +1,21 @@
+{
+    "RoleName": "ivr-dev-UpdateViolationBalanceRole",
+    "PolicyName": "ViolationsTableWriteAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:Query"
+                ],
+                "Resource": [
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-violations-dev",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-violations-dev/index/*"
+                ],
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

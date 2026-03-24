@@ -1,0 +1,12 @@
+{
+    "AttachedPolicies": [
+        {
+            "PolicyName": "AWSLambdaBasicExecutionRole",
+            "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        },
+        {
+            "PolicyName": "anycompany-ivr-DynamoDB-KMS-Access",
+            "PolicyArn": "arn:aws:iam::123456789012:policy/anycompany-ivr-DynamoDB-KMS-Access"
+        }
+    ]
+}

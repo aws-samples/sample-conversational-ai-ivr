@@ -1,0 +1,433 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AnyCompany IVR - Tool Lambda Functions (Account, Balance, Dispute)'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  DynamoDBStackName:
+    Type: String
+    Default: anycompany-ivr-dynamodb
+  # ADDED: S3 bucket for Lambda code deployment
+  #CodeBucket:
+  #  Type: String
+  #  Description: S3 bucket containing Lambda deployment packages
+  #CodePrefix:
+  #  Type: String
+  #  Default: lambda-code
+  #  Description: S3 key prefix for Lambda zip files
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'anycompany-ivr-lambda-role-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - Fn::ImportValue: !Sub '${DynamoDBStackName}-CustomersTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${DynamoDBStackName}-CustomersTableArn'
+                  - Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+                  - Fn::ImportValue: !Sub '${DynamoDBStackName}-DisputesTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${DynamoDBStackName}-DisputesTableArn'
+
+  # ===========================================
+  # TOOL: lookupByPlate
+  # ===========================================
+  LookupByPlateFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-lookup-by-plate-${Environment}'
+      Description: 'Tool: Look up customer account by license plate and state'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-CustomersTable'
+          VIOLATIONS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTable'
+      Code:
+        # CHANGED: Use S3 deployment package instead of inline placeholder
+        # For initial deploy, keep ZipFile. Replace with S3 after first code upload.
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: lookupByPlate
+
+  # ===========================================
+  # TOOL: lookupByCitation
+  # ===========================================
+  LookupByCitationFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-lookup-by-citation-${Environment}'
+      Description: 'Tool: Look up customer account by citation number'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-CustomersTable'
+          VIOLATIONS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTable'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: lookupByCitation
+
+  # ===========================================
+  # TOOL: lookupByAccount
+  # ===========================================
+  LookupByAccountFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-lookup-by-account-${Environment}'
+      Description: 'Tool: Look up customer account by account number and zip'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-CustomersTable'
+          VIOLATIONS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTable'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: lookupByAccount
+
+  # ===========================================
+  # TOOL: getBalance
+  # ===========================================
+  GetBalanceFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-get-balance-${Environment}'
+      Description: 'Tool: Get account balance summary'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-CustomersTable'
+          VIOLATIONS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTable'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: getBalance
+
+  # ===========================================
+  # TOOL: getViolationDetails
+  # ===========================================
+  GetViolationDetailsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-get-violation-details-${Environment}'
+      Description: 'Tool: Get detailed violation information'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          VIOLATIONS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTable'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: getViolationDetails
+
+  # ===========================================
+  # TOOL: submitDispute
+  # ===========================================
+  SubmitDisputeFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-submit-dispute-${Environment}'
+      Description: 'Tool: Submit a new dispute'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          VIOLATIONS_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTable'
+          DISPUTES_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-DisputesTable'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: submitDispute
+
+  # ===========================================
+  # TOOL: checkDisputeStatus
+  # ===========================================
+  CheckDisputeStatusFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-check-dispute-status-${Environment}'
+      Description: 'Tool: Check dispute status'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          DISPUTES_TABLE:
+            Fn::ImportValue: !Sub '${DynamoDBStackName}-DisputesTable'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: checkDisputeStatus
+
+  # ===========================================
+  # LAMBDA PERMISSIONS
+  # ===========================================
+  # CHANGED: These tools are invoked via API Gateway (not Bedrock directly)
+  # AgentCore Gateway → API Gateway → Lambda
+  # Keep Bedrock permissions for future direct invocation compatibility
+  # ADD API Gateway permissions
+
+  LookupByPlateApiGwPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LookupByPlateFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+  LookupByCitationApiGwPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LookupByCitationFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+  LookupByAccountApiGwPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LookupByAccountFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+  GetBalanceApiGwPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetBalanceFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+  GetViolationDetailsApiGwPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetViolationDetailsFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+  SubmitDisputeApiGwPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SubmitDisputeFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+  CheckDisputeStatusApiGwPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CheckDisputeStatusFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
+
+  # Keep Bedrock permissions as well (belt and suspenders)
+  LookupByPlateBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LookupByPlateFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  LookupByCitationBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LookupByCitationFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  LookupByAccountBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LookupByAccountFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  GetBalanceBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetBalanceFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  GetViolationDetailsBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetViolationDetailsFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  SubmitDisputeBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SubmitDisputeFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  CheckDisputeStatusBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CheckDisputeStatusFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  LookupByPlateFunctionArn:
+    Value: !GetAtt LookupByPlateFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-LookupByPlateFunctionArn'
+  LookupByPlateFunctionName:
+    Value: !Ref LookupByPlateFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-LookupByPlateFunctionName'
+  LookupByCitationFunctionArn:
+    Value: !GetAtt LookupByCitationFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-LookupByCitationFunctionArn'
+  LookupByCitationFunctionName:
+    Value: !Ref LookupByCitationFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-LookupByCitationFunctionName'
+  LookupByAccountFunctionArn:
+    Value: !GetAtt LookupByAccountFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-LookupByAccountFunctionArn'
+  LookupByAccountFunctionName:
+    Value: !Ref LookupByAccountFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-LookupByAccountFunctionName'
+  GetBalanceFunctionArn:
+    Value: !GetAtt GetBalanceFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-GetBalanceFunctionArn'
+  GetBalanceFunctionName:
+    Value: !Ref GetBalanceFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-GetBalanceFunctionName'
+  GetViolationDetailsFunctionArn:
+    Value: !GetAtt GetViolationDetailsFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-GetViolationDetailsFunctionArn'
+  GetViolationDetailsFunctionName:
+    Value: !Ref GetViolationDetailsFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-GetViolationDetailsFunctionName'
+  SubmitDisputeFunctionArn:
+    Value: !GetAtt SubmitDisputeFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-SubmitDisputeFunctionArn'
+  SubmitDisputeFunctionName:
+    Value: !Ref SubmitDisputeFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-SubmitDisputeFunctionName'
+  CheckDisputeStatusFunctionArn:
+    Value: !GetAtt CheckDisputeStatusFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-CheckDisputeStatusFunctionArn'
+  CheckDisputeStatusFunctionName:
+    Value: !Ref CheckDisputeStatusFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-CheckDisputeStatusFunctionName'
+  LambdaExecutionRoleArn:
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-${Environment}-LambdaExecutionRoleArn'

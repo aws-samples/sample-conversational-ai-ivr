@@ -1,0 +1,18 @@
+{
+    "RoleName": "ivr-dev-SaveAndRestoreSessionRole",
+    "PolicyName": "KMSAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "kms:Encrypt",
+                    "kms:Decrypt",
+                    "kms:GenerateDataKey"
+                ],
+                "Resource": "arn:aws:kms:us-east-1:123456789012:key/e01c9e08-14fa-4514-9e26-c7500fae9dc6",
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

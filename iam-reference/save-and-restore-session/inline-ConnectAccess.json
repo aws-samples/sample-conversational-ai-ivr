@@ -1,0 +1,19 @@
+{
+    "RoleName": "ivr-dev-SaveAndRestoreSessionRole",
+    "PolicyName": "ConnectAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "connect:GetContactAttributes",
+                    "connect:UpdateContactAttributes"
+                ],
+                "Resource": [
+                    "arn:aws:connect:us-east-1:123456789012:instance/CONNECT_INSTANCE_ID_PLACEHOLDER/contact/*"
+                ],
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

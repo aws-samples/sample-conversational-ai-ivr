@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AnyCompany IVR - Payment Tool Lambdas (buildPaymentCart, initiatePayment)'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  DynamoDBStackName:
+    Type: String
+    Default: anycompany-ivr-dynamodb
+  SessionTableStackName:
+    Type: String
+    Default: anycompany-ivr-session-table
+  # ADDED: Connect Instance ID for initiatePayment
+  ConnectInstanceId:
+    Type: String
+    Default: "PENDING"
+    Description: Amazon Connect instance ID (update after Connect is created)
+
+Resources:
+  PaymentsLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'anycompany-ivr-payments-lambda-role-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccessForPayments
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+                  # ADDED: Index access for session table
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+
+  # ===========================================
+  # TOOL: buildPaymentCart
+  # ===========================================
+  BuildPaymentCartFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-build-payment-cart-${Environment}'
+      Description: 'Tool: Create payment cart in IVRSessionContext table'
+      Runtime: python3.12
+      # FIXED: Handler must match source file build_payment_cart.py
+      Handler: build_payment_cart.lambda_handler
+      Role: !GetAtt PaymentsLambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          SESSION_TABLE_NAME:
+            Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableName'
+          CART_TTL_HOURS: '2'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message":"Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: buildPaymentCart
+
+  # ===========================================
+  # TOOL: initiatePayment
+  # ===========================================
+  InitiatePaymentFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-initiate-payment-${Environment}'
+      Description: 'Tool: Arm cart and return session attributes to trigger payment routing'
+      Runtime: python3.12
+      # FIXED: Handler must match source file initiate_payment.py
+      Handler: initiate_payment.lambda_handler
+      Role: !GetAtt PaymentsLambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          SESSION_TABLE_NAME:
+            Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableName'
+          # ADDED: Missing env var
+          CONNECT_INSTANCE_ID: !Ref ConnectInstanceId
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message":"Deploy actual code"}'}
+      Tags:
+        - Key: Tool
+          Value: initiatePayment
+
+  # ===========================================
+  # PERMISSIONS
+  # ===========================================
+  BuildPaymentCartBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref BuildPaymentCartFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  InitiatePaymentBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref InitiatePaymentFunction
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  BuildPaymentCartFunctionArn:
+    Value: !GetAtt BuildPaymentCartFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BuildPaymentCartFunctionArn'
+  BuildPaymentCartFunctionName:
+    Value: !Ref BuildPaymentCartFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-BuildPaymentCartFunctionName'
+  InitiatePaymentFunctionArn:
+    Value: !GetAtt InitiatePaymentFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-InitiatePaymentFunctionArn'
+  InitiatePaymentFunctionName:
+    Value: !Ref InitiatePaymentFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-InitiatePaymentFunctionName'

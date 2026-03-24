@@ -1,0 +1,226 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  AnyCompany Parking & Tolling IVR - Core DynamoDB Tables
+  Creates Customers, Violations, and Disputes tables.
+  Single-table design with generic PK/SK and GSI1/GSI2 key patterns.
+  Stack: anycompany-ivr-dynamodb (Phase 0)
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Environment name
+
+  StackPrefix:
+    Type: String
+    Default: anycompany-ivr
+    Description: Prefix for table naming
+
+Resources:
+
+  # ═══════════════════════════════════════════════════════════════
+  # Customers Table
+  # PK/SK: Generic single-table design
+  # GSI1: GSI1-LicensePlate-Index (GSI1PK/GSI1SK)
+  # GSI2: GSI2-AccountNumber-Index (GSI2PK/GSI2SK)
+  # ═══════════════════════════════════════════════════════════════
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${StackPrefix}-customers-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1-LicensePlate-Index
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2-AccountNumber-Index
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref StackPrefix
+
+  # ═══════════════════════════════════════════════════════════════
+  # Violations Table
+  # PK/SK: Generic single-table design
+  # GSI1: GSI1-Citation-Index (GSI1PK/GSI1SK)
+  # GSI2: GSI2-Customer-Index (GSI2PK/GSI2SK)
+  # ═══════════════════════════════════════════════════════════════
+  ViolationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${StackPrefix}-violations-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1-Citation-Index
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2-Customer-Index
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref StackPrefix
+
+  # ═══════════════════════════════════════════════════════════════
+  # Disputes Table
+  # PK/SK: Generic single-table design
+  # GSI1: GSI1-Violation-Index (GSI1PK/GSI1SK)
+  # GSI2: GSI2-Reference-Index (GSI2PK/GSI2SK)
+  # ═══════════════════════════════════════════════════════════════
+  DisputesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${StackPrefix}-disputes-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1-Violation-Index
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2-Reference-Index
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref StackPrefix
+
+Outputs:
+
+  CustomersTableName:
+    Description: Customers table name
+    Value: !Ref CustomersTable
+    Export:
+      Name: !Sub '${AWS::StackName}-CustomersTable'
+
+  CustomersTableArn:
+    Description: Customers table ARN
+    Value: !GetAtt CustomersTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-CustomersTableArn'
+
+  ViolationsTableName:
+    Description: Violations table name
+    Value: !Ref ViolationsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-ViolationsTable'
+
+  ViolationsTableArn:
+    Description: Violations table ARN
+    Value: !GetAtt ViolationsTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ViolationsTableArn'
+
+  DisputesTableName:
+    Description: Disputes table name
+    Value: !Ref DisputesTable
+    Export:
+      Name: !Sub '${AWS::StackName}-DisputesTable'
+
+  DisputesTableArn:
+    Description: Disputes table ARN
+    Value: !GetAtt DisputesTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-DisputesTableArn'

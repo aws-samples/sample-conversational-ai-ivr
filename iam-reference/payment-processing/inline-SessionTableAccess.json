@@ -1,0 +1,22 @@
+{
+    "RoleName": "ivr-dev-PaymentProcessingRole",
+    "PolicyName": "SessionTableAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:Query"
+                ],
+                "Resource": [
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/ivr-dev-IVRSessionContext",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/ivr-dev-IVRSessionContext/index/*"
+                ],
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

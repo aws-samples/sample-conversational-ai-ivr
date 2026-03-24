@@ -1,0 +1,253 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Nested - Create AppIntegrations MCP Server application for Amazon Q in Connect (ApplicationType=MCP_SERVER)."
+
+Parameters:
+  InstanceAlias:
+    Type: String
+  GatewayId:
+    Type: String
+    Description: "Bedrock AgentCore Gateway ID. For MCP_SERVER apps, Namespace MUST equal this Gateway ID."
+  McpApplicationName:
+    Type: String
+    Default: "mcp_tools"
+    Description: "MCP server application name (display name)."
+
+Resources:
+  McpAppCustomResourceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${InstanceAlias}-mcpapp-cr-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: mcp-appintegrations
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: Logs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Sid: AgentCore
+                Effect: Allow
+                Action:
+                  - bedrock-agentcore-control:GetGateway
+                  - bedrock-agentcore-control:ListGateways
+                  - bedrock-agentcore:InvokeGateway
+                Resource: "*"
+              - Sid: AppIntegrations
+                Effect: Allow
+                Action:
+                  - app-integrations:ListApplications
+                  - app-integrations:GetApplication
+                  - app-integrations:CreateApplication
+                  - app-integrations:UpdateApplication
+                  - app-integrations:DeleteApplication
+                Resource: "*"
+
+  McpAppCustomResourceFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${InstanceAlias}-mcpapp"
+      Role: !GetAtt McpAppCustomResourceRole.Arn
+      Runtime: python3.12
+      Handler: index.handler
+      Timeout: 300
+      MemorySize: 256
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import traceback
+          import urllib.parse
+
+          import boto3
+          import botocore.session
+          from botocore.awsrequest import AWSRequest
+          from botocore.auth import SigV4Auth
+          import urllib3
+
+          http = urllib3.PoolManager()
+
+          def _signed_request(method, url, region, body=None):
+              session = botocore.session.get_session()
+              creds = session.get_credentials()
+              if creds is None:
+                  raise Exception("No AWS credentials available for signing")
+              data = None
+              headers = {"content-type": "application/json"}
+              if body is not None:
+                  data = json.dumps(body).encode("utf-8")
+              req = AWSRequest(method=method, url=url, data=data, headers=headers)
+              SigV4Auth(creds, "app-integrations", region).add_auth(req)
+              prepared = req.prepare()
+
+              resp = http.request(
+                  method,
+                  prepared.url,
+                  body=prepared.body,
+                  headers=dict(prepared.headers),
+                  retries=False,
+                  timeout=urllib3.Timeout(connect=5.0, read=30.0),
+              )
+              return resp.status, resp.data.decode("utf-8")
+
+          def _list_applications(region):
+              apps = []
+              base = "https://app-integrations.{region}.amazonaws.com/applications".format(region=region)
+              next_token = None
+              while True:
+                  qs = {"applicationType": "MCP_SERVER", "maxResults": "50"}
+                  if next_token:
+                      qs["nextToken"] = next_token
+                  url = base + "?" + urllib.parse.urlencode(qs)
+                  status, data = _signed_request("GET", url, region)
+                  if status >= 300:
+                      raise Exception(f"HTTP {status} list applications: {data}")
+                  payload = json.loads(data or "{}")
+                  apps.extend(payload.get("Applications", []))
+                  next_token = payload.get("NextToken")
+                  if not next_token:
+                      break
+              return apps
+
+          def _get_application(region, app_arn):
+              url = f"https://app-integrations.{region}.amazonaws.com/applications/{urllib.parse.quote(app_arn, safe='')}"
+              status, data = _signed_request("GET", url, region)
+              if status >= 300:
+                  raise Exception(f"HTTP {status} get application: {data}")
+              return json.loads(data or "{}")
+
+          def _create_application(region, name, namespace, access_url):
+              url = f"https://app-integrations.{region}.amazonaws.com/applications"
+              body = {
+                  "Name": name,
+                  "Namespace": namespace,
+                  "Description": "MCP server application for Amazon Connect (created by CloudFormation).",
+                  "ApplicationSourceConfig": {
+                      "ExternalUrlConfig": {
+                          "AccessUrl": access_url,
+                      }
+                  },
+              }
+              status, data = _signed_request("POST", url, region, body=body)
+              if status >= 300:
+                  raise Exception(f"HTTP {status} create application: {data}")
+              return json.loads(data or "{}")
+
+          def _update_application(region, app_arn, access_url):
+              url = f"https://app-integrations.{region}.amazonaws.com/applications/{urllib.parse.quote(app_arn, safe='')}"
+              body = {
+                  "ApplicationSourceConfig": {
+                      "ExternalUrlConfig": {
+                          "AccessUrl": access_url,
+                      }
+                  },
+              }
+              status, data = _signed_request("PATCH", url, region, body=body)
+              if status >= 300:
+                  raise Exception(f"HTTP {status} update application: {data}")
+              return json.loads(data or "{}")
+
+          def _delete_application(region, app_arn):
+              url = f"https://app-integrations.{region}.amazonaws.com/applications/{urllib.parse.quote(app_arn, safe='')}"
+              status, data = _signed_request("DELETE", url, region)
+              if status in (200, 202, 204, 404):
+                  return
+              raise Exception(f"HTTP {status} delete application: {data}")
+
+          def _send_cfn(event, context, status, data=None, reason=None, physical_id=None):
+              import urllib3
+              http2 = urllib3.PoolManager()
+              response_url = event["ResponseURL"]
+              response_body = {
+                  "Status": status,
+                  "Reason": reason or f"See CloudWatch Log Stream: {context.log_stream_name}",
+                  "PhysicalResourceId": physical_id or context.log_stream_name,
+                  "StackId": event["StackId"],
+                  "RequestId": event["RequestId"],
+                  "LogicalResourceId": event["LogicalResourceId"],
+                  "NoEcho": False,
+                  "Data": data or {},
+              }
+              body = json.dumps(response_body).encode("utf-8")
+              headers = {"content-type": "", "content-length": str(len(body))}
+              http2.request("PUT", response_url, body=body, headers=headers)
+
+          def handler(event, context):
+              print("EVENT:", json.dumps(event))
+              region = os.environ.get("AWS_REGION", "us-east-1")
+              props = event.get("ResourceProperties", {})
+              gateway_id = props.get("GatewayId")
+              name = props.get("McpApplicationName", "mcp_tools")
+
+              if not gateway_id:
+                  _send_cfn(event, context, "FAILED", reason="GatewayId is required.")
+                  return
+
+              namespace = gateway_id
+              access_url = f"https://{gateway_id}.gateway.bedrock-agentcore.{region}.amazonaws.com/mcp"
+
+              physical_id = event.get("PhysicalResourceId")
+
+              try:
+                  req_type = event.get("RequestType")
+                  if req_type in ("Create", "Update"):
+                      apps = _list_applications(region)
+                      match = None
+                      for a in apps:
+                          if a.get("Name") == name and a.get("Namespace") == namespace:
+                              match = a
+                              break
+
+                      if match:
+                          app_arn = match["Arn"]
+                          _update_application(region, app_arn, access_url)
+                          app = _get_application(region, app_arn)
+                      else:
+                          app = _create_application(region, name, namespace, access_url)
+
+                      data = {
+                          "McpServerApplicationArn": app.get("Arn"),
+                          "McpServerApplicationId": app.get("Id"),
+                          "McpApplicationName": name,
+                          "McpApplicationNamespace": namespace,
+                          "AccessUrl": access_url,
+                      }
+                      _send_cfn(event, context, "SUCCESS", data=data, physical_id=app.get("Arn") or physical_id)
+                  elif req_type == "Delete":
+                      if physical_id and physical_id.startswith("arn:aws:"):
+                          _delete_application(region, physical_id)
+                      _send_cfn(event, context, "SUCCESS", data={}, physical_id=physical_id or context.log_stream_name)
+                  else:
+                      _send_cfn(event, context, "FAILED", reason=f"Unknown RequestType: {req_type}")
+              except Exception as e:
+                  print("ERROR:", str(e))
+                  print(traceback.format_exc())
+                  _send_cfn(event, context, "FAILED", reason=str(e), physical_id=physical_id or context.log_stream_name)
+
+  McpApplication:
+    Type: Custom::McpServerApplication
+    Properties:
+      ServiceToken: !GetAtt McpAppCustomResourceFn.Arn
+      InstanceAlias: !Ref InstanceAlias
+      GatewayId: !Ref GatewayId
+      McpApplicationName: !Ref McpApplicationName
+
+Outputs:
+  McpServerApplicationArn:
+    Value: !GetAtt McpApplication.McpServerApplicationArn
+  McpServerApplicationId:
+    Value: !GetAtt McpApplication.McpServerApplicationId
+  McpApplicationNamespace:
+    Value: !GetAtt McpApplication.McpApplicationNamespace
+  McpApplicationName:
+    Value: !GetAtt McpApplication.McpApplicationName

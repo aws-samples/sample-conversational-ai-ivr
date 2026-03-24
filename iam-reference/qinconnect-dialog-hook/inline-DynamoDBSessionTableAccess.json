@@ -1,0 +1,22 @@
+{
+    "RoleName": "anycompany-ivr-dev-QinConnectHook-role",
+    "PolicyName": "DynamoDBSessionTableAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "DynamoDBReadAccess",
+                "Effect": "Allow",
+                "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan"
+                ],
+                "Resource": [
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/ivr-dev-IVRSessionContext",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/ivr-dev-IVRSessionContext/index/*"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,67 @@
+# --- Environment & Secrets ---
+.env
+.env.*
+!.env.example
+env.sh
+*.pem
+*.key
+*.secret
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+venv/
+ENV/
+.venv/
+
+# --- Node.js ---
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+._*
+Thumbs.db
+
+# --- AWS ---
+samconfig.toml
+.aws-sam/
+cdk.out/
+
+# --- Build Artifacts ---
+*.zip
+*.tar.gz
+
+# --- Backups ---
+backups/
+*.bak
+*.backup
+*.old
+
+# --- Lambda Export (raw from AWS) ---
+lambda-code-export*/
+
+# --- Debug logs ---
+Bedrock-Chat-Session/
+
+# --- Temp ---
+/tmp/
+*.tmp
+*.log
+*.cache
+
+# --- Downloaded copies ---
+**/downloaded_copy/

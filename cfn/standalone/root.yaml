@@ -1,0 +1,218 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Root: Amazon Connect + Bedrock AgentCore Gateway (OpenAPI target) + AppIntegrations MCP Server application.
+  Phase 1: DeployQAgents=false (default) -> creates infra and MCP app scaffold.
+  Phase 2: After you associate Amazon Q domain to the Connect instance, deploy QAgents separately.
+
+Parameters:
+  InstanceAlias:
+    Type: String
+    Description: "Connect instance alias (also used as a naming prefix)."
+
+  AgentCoreGatewayName:
+    Type: String
+    Default: c001-ivr-mcp-gw
+    Description: "Short AgentCore Gateway name (<=21 chars)."
+
+  OpenApiSchemaBucket:
+    Type: String
+    Description: "S3 bucket containing the OpenAPI schema file."
+  OpenApiSchemaKey:
+    Type: String
+    Description: "S3 key (path) to the OpenAPI schema file."
+
+  ApiGatewayRestApiId:
+    Type: String
+    Description: "Existing API Gateway REST API id."
+  ApiGatewayStageName:
+    Type: String
+    Default: dev
+    Description: "API Gateway stage name (e.g., dev)."
+
+  ApiGatewayApiKeyId:
+    Type: String
+    Description: "API Gateway API key ID (not the key value)."
+
+  KnowledgeBaseS3Bucket:
+    Type: String
+    Description: "S3 bucket containing KB docs."
+  KnowledgeBaseS3Prefix:
+    Type: String
+    Default: ""
+    Description: "Optional prefix for KB docs."
+
+  ConnectInstanceTemplateUrl:
+    Type: String
+  ConnectConfigTemplateUrl:
+    Type: String
+  AgentCoreGatewayTemplateUrl:
+    Type: String
+  AgentCoreTargetTemplateUrl:
+    Type: String
+  BootstrapTemplateUrl:
+    Type: String
+  McpApplicationTemplateUrl:
+    Type: String
+
+  McpApplicationName:
+    Type: String
+    Default: "mcp_tools"
+
+  BootstrapCodeS3Bucket:
+    Type: String
+  BootstrapCodeS3Key:
+    Type: String
+
+  DeployQAgents:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+
+  Locale:
+    Type: String
+    Default: en_US
+
+  AgentCoreTargetName:
+    Type: String
+    Default: ""
+    Description: >
+      Optional custom target name for AgentCore Gateway Target.
+      If empty, defaults to ${InstanceAlias}-openapi-target.
+
+  ToolNamePrefix:
+    Type: String
+    Default: ""
+    Description: >
+      Target name with hyphens replaced by underscores for ToolName.
+      If empty, deploy script must compute it.
+
+Conditions:
+  DoQAgents: !Equals [!Ref DeployQAgents, "true"]
+
+Resources:
+
+  # ═══════════════════════════════════════════════════════════════
+  # Step 1: Create Connect Instance
+  # ═══════════════════════════════════════════════════════════════
+  ConnectInstanceStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref ConnectInstanceTemplateUrl
+      Parameters:
+        InstanceAlias: !Ref InstanceAlias
+
+  # ═══════════════════════════════════════════════════════════════
+  # Step 2: Create AgentCore Gateway
+  #   Depends on: ConnectInstance (needs instance ARN)
+  # ═══════════════════════════════════════════════════════════════
+  AgentCoreGatewayStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: ConnectInstanceStack
+    Properties:
+      TemplateURL: !Ref AgentCoreGatewayTemplateUrl
+      Parameters:
+        AgentCoreGatewayName: !Ref AgentCoreGatewayName
+        InstanceAlias: !Ref InstanceAlias
+        ConnectInstanceArn: !GetAtt ConnectInstanceStack.Outputs.ConnectInstanceArn
+
+  # ═══════════════════════════════════════════════════════════════
+  # Step 3: Bootstrap — API Key Credential Provider ONLY
+  #   Depends on: AgentCoreGateway (needs GatewayId)
+  #   Creates:
+  #     - AgentCore API Key Credential Provider (stores API GW key)
+  # ═══════════════════════════════════════════════════════════════
+  BootstrapStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: AgentCoreGatewayStack
+    Properties:
+      TemplateURL: !Ref BootstrapTemplateUrl
+      Parameters:
+        InstanceAlias: !Ref InstanceAlias
+        ApiGatewayApiKeyId: !Ref ApiGatewayApiKeyId
+        BootstrapCodeS3Bucket: !Ref BootstrapCodeS3Bucket
+        BootstrapCodeS3Key: !Ref BootstrapCodeS3Key
+
+  # ═══════════════════════════════════════════════════════════════
+  # Step 3b: MCP Server Application (AppIntegrations)
+  #   Depends on: AgentCoreGateway (needs GatewayId for namespace
+  #               and access URL)
+  # ═══════════════════════════════════════════════════════════════
+  McpApplicationStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: AgentCoreGatewayStack
+    Properties:
+      TemplateURL: !Ref McpApplicationTemplateUrl
+      Parameters:
+        InstanceAlias: !Ref InstanceAlias
+        GatewayId: !GetAtt AgentCoreGatewayStack.Outputs.GatewayId
+        McpApplicationName: !Ref McpApplicationName
+
+  # ═══════════════════════════════════════════════════════════════
+  # Step 4: AgentCore Target (OpenAPI spec)
+  #   Depends on: Bootstrap (needs ApiKeyCredentialProviderArn)
+  #               AgentCoreGateway (needs GatewayId)
+  # ═══════════════════════════════════════════════════════════════
+  AgentCoreTargetStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: BootstrapStack
+    Properties:
+      TemplateURL: !Ref AgentCoreTargetTemplateUrl
+      Parameters:
+        InstanceAlias: !Ref InstanceAlias
+        GatewayId: !GetAtt AgentCoreGatewayStack.Outputs.GatewayId
+        OpenApiSchemaBucket: !Ref OpenApiSchemaBucket
+        OpenApiSchemaKey: !Ref OpenApiSchemaKey
+        ApiKeyCredentialProviderArn: !GetAtt BootstrapStack.Outputs.ApiKeyCredentialProviderArn
+        TargetName: !Ref AgentCoreTargetName
+        ToolNamePrefix: !Ref ToolNamePrefix
+
+  # ═══════════════════════════════════════════════════════════════
+  # Step 5: Connect Config (Q Assistant, KB, AI Prompt)
+  #   Depends on: ConnectInstance
+  # ═══════════════════════════════════════════════════════════════
+  ConnectConfigStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: ConnectInstanceStack
+    Properties:
+      TemplateURL: !Ref ConnectConfigTemplateUrl
+      Parameters:
+        InstanceAlias: !Ref InstanceAlias
+        KnowledgeBaseS3Bucket: !Ref KnowledgeBaseS3Bucket
+        KnowledgeBaseS3Prefix: !Ref KnowledgeBaseS3Prefix
+
+Outputs:
+  # ── Connect ──
+  ConnectInstanceArn:
+    Value: !GetAtt ConnectInstanceStack.Outputs.ConnectInstanceArn
+  ConnectInstanceId:
+    Value: !GetAtt ConnectInstanceStack.Outputs.ConnectInstanceId
+
+  # ── AgentCore Gateway ──
+  AgentCoreGatewayId:
+    Value: !GetAtt AgentCoreGatewayStack.Outputs.GatewayId
+  AgentCoreGatewayUrl:
+    Value: !GetAtt AgentCoreGatewayStack.Outputs.GatewayUrl
+
+  # ── AgentCore Target ──
+  AgentCoreTargetId:
+    Value: !GetAtt AgentCoreTargetStack.Outputs.GatewayTargetId
+  AgentCoreTargetName:
+    Value: !GetAtt AgentCoreTargetStack.Outputs.AgentCoreTargetName
+  ToolNamePrefix:
+    Value: !GetAtt AgentCoreTargetStack.Outputs.ToolNamePrefix
+
+  # ── Bootstrap (Credential Provider) ──
+  ApiKeyCredentialProviderArn:
+    Value: !GetAtt BootstrapStack.Outputs.ApiKeyCredentialProviderArn
+
+  # ── MCP Application ──
+  McpServerApplicationArn:
+    Value: !GetAtt McpApplicationStack.Outputs.McpServerApplicationArn
+
+  # ── Q in Connect ──
+  QInConnectAssistantId:
+    Value: !GetAtt ConnectConfigStack.Outputs.QInConnectAssistantId
+  QInConnectAssistantArn:
+    Value: !GetAtt ConnectConfigStack.Outputs.QInConnectAssistantArn
+  OrchestrationPromptId:
+    Value: !GetAtt ConnectConfigStack.Outputs.OrchestrationPromptId

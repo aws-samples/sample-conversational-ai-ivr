@@ -1,0 +1,7 @@
+[
+    {"ParameterKey": "Environment", "ParameterValue": "prod"},
+    {"ParameterKey": "ProjectName", "ParameterValue": "anycompany-ivr"},
+    {"ParameterKey": "ConnectInstanceId", "ParameterValue": "REPLACE_WITH_YOUR_CONNECT_INSTANCE_ID"},
+    {"ParameterKey": "WisdomAssistantId", "ParameterValue": "REPLACE_WITH_YOUR_WISDOM_ASSISTANT_ID"},
+    {"ParameterKey": "AgentCoreTargetName", "ParameterValue": "anycompanyDemoIVRApi"}
+]

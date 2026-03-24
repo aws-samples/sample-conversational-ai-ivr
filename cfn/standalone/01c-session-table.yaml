@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IVR Session Context DynamoDB table and KMS key for payment encryption
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+
+Resources:
+
+  PaymentEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Encryption key for IVR payment session data
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowRootAccount
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+      EnableKeyRotation: true
+
+  PaymentEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub 'alias/ivr-${Environment}-payment-key'
+      TargetKeyId: !Ref PaymentEncryptionKey
+
+  IVRSessionContextTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'ivr-${Environment}-IVRSessionContext'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        # CHANGED: Primary key is contactId (not sessionId)
+        - AttributeName: contactId
+          AttributeType: S
+        - AttributeName: recordType
+          AttributeType: S
+        - AttributeName: initialContactId
+          AttributeType: S
+      KeySchema:
+        # CHANGED: Simple key (HASH only, no sort key)
+        - AttributeName: contactId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: initialContactId-index
+          KeySchema:
+            - AttributeName: initialContactId
+              KeyType: HASH
+            - AttributeName: recordType
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      # REMOVED: TTL not enabled on actual table
+      # If you want TTL in future, uncomment:
+      # TimeToLiveSpecification:
+      #   AttributeName: ttl
+      #   Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: !Ref PaymentEncryptionKey
+
+Outputs:
+  SessionTableName:
+    Value: !Ref IVRSessionContextTable
+    Export:
+      Name: !Sub '${AWS::StackName}-SessionTableName'
+  SessionTableArn:
+    Value: !GetAtt IVRSessionContextTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-SessionTableArn'
+  KMSKeyArn:
+    Value: !GetAtt PaymentEncryptionKey.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-KMSKeyArn'
+  KMSKeyId:
+    Value: !Ref PaymentEncryptionKey
+    Export:
+      Name: !Sub '${AWS::StackName}-KMSKeyId'

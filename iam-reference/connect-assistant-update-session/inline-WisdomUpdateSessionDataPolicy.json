@@ -1,0 +1,14 @@
+{
+    "RoleName": "anycompany-ivr-update-session-LambdaExecutionRole-1Xf5ga47E9hJ",
+    "PolicyName": "WisdomUpdateSessionDataPolicy",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "wisdom:UpdateSessionData",
+                "Resource": "arn:aws:wisdom:us-east-1:123456789012:session/WISDOM_ASSISTANT_ID_PLACEHOLDER/*",
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

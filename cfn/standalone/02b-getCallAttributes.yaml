@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AnyCompany IVR - getCallAttributes Lambda Function (Simplified)'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+  ClientConfigTableName:
+    Type: String
+    Default: anycompany-ivr-client-config-dev
+    Description: Name of the existing DynamoDB table
+
+Resources:
+  # IAM Role
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'anycompany-ivr-${Environment}-getCallAttributes-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ClientConfigTableName}'
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ClientConfigTableName}/index/*'
+
+  # Log Group
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/anycompany-ivr-${Environment}-getCallAttributes'
+      RetentionInDays: 30
+
+  # Lambda Function
+  GetCallAttributesFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: LambdaLogGroup
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-${Environment}-getCallAttributes'
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 256
+      Timeout: 10
+      Environment:
+        Variables:
+          CLIENT_CONFIG_TABLE: !Ref ClientConfigTableName
+          PHONE_NUMBER_INDEX: PhoneNumber-Index
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+          
+
+  # Connect Permission
+  ConnectInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetCallAttributesFunction
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  LambdaArn:
+    Value: !GetAtt GetCallAttributesFunction.Arn
+    Export:
+      Name: !Sub 'anycompany-ivr-${Environment}-getCallAttributes-arn'

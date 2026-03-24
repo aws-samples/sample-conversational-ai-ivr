@@ -1,0 +1,494 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  AnyCompany IVR - Payment Handoff Resources
+  4 Lambda functions for payment flow orchestration within Connect.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  ConnectInstanceArn:
+    Type: String
+    Description: Amazon Connect instance ARN
+  DynamoDBStackName:
+    Type: String
+    Default: anycompany-ivr-dynamodb
+  SessionTableStackName:
+    Type: String
+    Default: anycompany-ivr-session-table
+  LambdaRuntime:
+    Type: String
+    Default: python3.12
+  LambdaTimeout:
+    Type: Number
+    Default: 30
+  LambdaMemory:
+    Type: Number
+    Default: 256
+  # ADDED: PaymentCollectionBot references (set after bot is created)
+  PaymentBotId:
+    Type: String
+    Default: PENDING
+    Description: PaymentCollectionBot bot ID (update after bot creation)
+  PaymentBotAliasId:
+    Type: String
+    Default: PENDING
+    Description: PaymentCollectionBot alias ID (update after bot creation)
+
+Resources:
+
+  # ==========================================================
+  # SSM Parameters
+  # ==========================================================
+  SessionTableNameParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/ivr/${Environment}/session-table-name'
+      Type: String
+      Value:
+        Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableName'
+      Description: IVRSessionContext DynamoDB table name
+
+  KMSKeyArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/ivr/${Environment}/payment-kms-key-arn'
+      Type: String
+      Value:
+        Fn::ImportValue: !Sub '${SessionTableStackName}-KMSKeyArn'
+      Description: KMS key ARN for payment data encryption
+
+  ConnectInstanceArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/ivr/${Environment}/connect-instance-arn'
+      Type: String
+      Value: !Ref ConnectInstanceArn
+      Description: Amazon Connect instance ARN
+
+  # ==========================================================
+  # IAM Role — SaveAndRestoreSession
+  # ==========================================================
+  SaveAndRestoreSessionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ivr-${Environment}-SaveAndRestoreSessionRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SessionTableAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+        - PolicyName: KMSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:GenerateDataKey
+                Resource:
+                  Fn::ImportValue: !Sub '${SessionTableStackName}-KMSKeyArn'
+        - PolicyName: ConnectAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - connect:GetContactAttributes
+                  - connect:UpdateContactAttributes
+                Resource:
+                  - !Sub '${ConnectInstanceArn}/contact/*'
+
+  # ==========================================================
+  # IAM Role — SeedPaymentSession
+  # ==========================================================
+  SeedPaymentSessionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ivr-${Environment}-SeedPaymentSessionRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SessionTableReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+        - PolicyName: KMSDecryptAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  Fn::ImportValue: !Sub '${SessionTableStackName}-KMSKeyArn'
+        - PolicyName: ConnectAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - connect:UpdateContactAttributes
+                Resource:
+                  - !Sub '${ConnectInstanceArn}/contact/*'
+        # ADDED: Lex PutSession permission for PaymentCollectionBot
+        - PolicyName: LexPaymentBotAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lex:PutSession
+                  - lex:RecognizeText
+                  - lex:RecognizeUtterance
+                  - lex:DeleteSession
+                  - lex:GetSession
+                Resource:
+                  - !Sub 'arn:aws:lex:${AWS::Region}:${AWS::AccountId}:bot-alias/${PaymentBotId}/${PaymentBotAliasId}'
+                  - !Sub 'arn:aws:lex:${AWS::Region}:${AWS::AccountId}:bot/${PaymentBotId}'
+
+  # ==========================================================
+  # IAM Role — PaymentProcessing
+  # ==========================================================
+  PaymentProcessingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ivr-${Environment}-PaymentProcessingRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SessionTableAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+        - PolicyName: KMSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:GenerateDataKey
+                Resource:
+                  Fn::ImportValue: !Sub '${SessionTableStackName}-KMSKeyArn'
+        - PolicyName: ViolationsTableAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+
+  # ==========================================================
+  # IAM Role — UpdateViolationBalance
+  # ==========================================================
+  UpdateViolationBalanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ivr-${Environment}-UpdateViolationBalanceRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ViolationsTableWriteAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${DynamoDBStackName}-ViolationsTableArn'
+        - PolicyName: SessionTableReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                Resource:
+                  - Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+        - PolicyName: KMSDecryptAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  Fn::ImportValue: !Sub '${SessionTableStackName}-KMSKeyArn'
+
+  # ==========================================================
+  # Lambda — SaveAndRestoreSession
+  # ==========================================================
+  SaveAndRestoreSessionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'ivr-${Environment}-SaveAndRestoreSession'
+      Description: Saves/restores AI session context around PCI payment handoff
+      Runtime: !Ref LambdaRuntime
+      # FIXED: Python handler (not Node.js index.handler)
+      Handler: index.lambda_handler
+      Role: !GetAtt SaveAndRestoreSessionRole.Arn
+      Timeout: !Ref LambdaTimeout
+      MemorySize: !Ref LambdaMemory
+      Environment:
+        Variables:
+          SESSION_TABLE_NAME:
+            Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableName'
+          ENVIRONMENT: !Ref Environment
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message":"stub"}'}
+
+  SaveAndRestoreSessionConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SaveAndRestoreSessionFunction
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref ConnectInstanceArn
+
+  # ==========================================================
+  # Lambda — SeedPaymentSession
+  # ==========================================================
+  SeedPaymentSessionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'ivr-${Environment}-SeedPaymentSession'
+      Description: Seeds PaymentCollectionBot session with cart details
+      Runtime: !Ref LambdaRuntime
+      # FIXED: Must match source file seed_session.py
+      Handler: seed_session.lambda_handler
+      Role: !GetAtt SeedPaymentSessionRole.Arn
+      Timeout: !Ref LambdaTimeout
+      MemorySize: !Ref LambdaMemory
+      Environment:
+        Variables:
+          SESSION_TABLE_NAME:
+            Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableName'
+          KMS_KEY_ARN:
+            Fn::ImportValue: !Sub '${SessionTableStackName}-KMSKeyArn'
+          ENVIRONMENT: !Ref Environment
+          # ADDED: PaymentCollectionBot references
+          PAYMENT_BOT_ID: !Ref PaymentBotId
+          PAYMENT_BOT_ALIAS_ID: !Ref PaymentBotAliasId
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message":"stub"}'}
+
+  SeedPaymentSessionConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SeedPaymentSessionFunction
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref ConnectInstanceArn
+
+  # ==========================================================
+  # Lambda — PaymentProcessing
+  # ==========================================================
+  PaymentProcessingFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'ivr-${Environment}-PaymentProcessing'
+      Description: Processes card payment via PaymentCollectionBot fulfillment
+      Runtime: !Ref LambdaRuntime
+      # FIXED: Python handler
+      Handler: index.lambda_handler
+      Role: !GetAtt PaymentProcessingRole.Arn
+      Timeout: !Ref LambdaTimeout
+      MemorySize: !Ref LambdaMemory
+      Environment:
+        Variables:
+          # FIXED: Match actual deployed env vars
+          PAYMENT_GATEWAY_URL_PARAM: !Sub '/ivr/payment/${Environment}/gateway-url'
+          PAYMENT_API_KEY_PARAM: !Sub '/ivr/payment/${Environment}/api-key'
+          ENVIRONMENT: !Ref Environment
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message":"stub"}'}
+
+  PaymentProcessingConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PaymentProcessingFunction
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref ConnectInstanceArn
+
+  # FIXED: Lex V2 uses lexv2.amazonaws.com (not lex.amazonaws.com)
+  PaymentProcessingLexPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PaymentProcessingFunction
+      Action: lambda:InvokeFunction
+      Principal: lexv2.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  # ==========================================================
+  # Lambda — UpdateViolationBalance
+  # ==========================================================
+  UpdateViolationBalanceFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'ivr-${Environment}-UpdateViolationBalance'
+      Description: Updates violation balances after successful payment
+      Runtime: !Ref LambdaRuntime
+      # FIXED: Python handler
+      Handler: index.lambda_handler
+      Role: !GetAtt UpdateViolationBalanceRole.Arn
+      Timeout: !Ref LambdaTimeout
+      MemorySize: !Ref LambdaMemory
+      Environment:
+        Variables:
+          # FIXED: Match actual deployed env vars
+          ENVIRONMENT: !Ref Environment
+          VIOLATION_API_URL: MOCK_MODE
+          LOG_LEVEL: INFO
+          VIOLATION_API_KEY_PARAM: !Sub '/ivr/payment/${Environment}/violation-api-key'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message":"stub"}'}
+
+  UpdateViolationBalanceConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UpdateViolationBalanceFunction
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Ref ConnectInstanceArn
+
+Outputs:
+  SaveAndRestoreSessionFunctionArn:
+    Value: !GetAtt SaveAndRestoreSessionFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-SaveRestoreLambdaArn'
+  SaveAndRestoreSessionFunctionName:
+    Value: !Ref SaveAndRestoreSessionFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-SaveRestoreLambdaName'
+  SeedPaymentSessionFunctionArn:
+    Value: !GetAtt SeedPaymentSessionFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-SeedPaymentSessionLambdaArn'
+  SeedPaymentSessionFunctionName:
+    Value: !Ref SeedPaymentSessionFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-SeedPaymentSessionLambdaName'
+  PaymentProcessingFunctionArn:
+    Value: !GetAtt PaymentProcessingFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-PaymentProcessingLambdaArn'
+  PaymentProcessingFunctionName:
+    Value: !Ref PaymentProcessingFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-PaymentProcessingLambdaName'
+  UpdateViolationBalanceFunctionArn:
+    Value: !GetAtt UpdateViolationBalanceFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-UpdateViolationBalanceLambdaArn'
+  UpdateViolationBalanceFunctionName:
+    Value: !Ref UpdateViolationBalanceFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-UpdateViolationBalanceLambdaName'
+  SessionTableName:
+    Value:
+      Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableName'
+  KMSKeyArn:
+    Value:
+      Fn::ImportValue: !Sub '${SessionTableStackName}-KMSKeyArn'

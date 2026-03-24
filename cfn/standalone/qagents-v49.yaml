@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Phase 2 - Amazon Q in Connect Orchestration AI Agent with MCP tools."
+
+Parameters:
+  InstanceAlias:
+    Type: String
+  ConnectInstanceArn:
+    Type: String
+  QInConnectAssistantIdOrArn:
+    Type: String
+    Description: "Assistant ID (recommended) or ARN."
+  OrchestrationPromptId:
+    Type: String
+  Locale:
+    Type: String
+    Default: en_US
+  AgentCoreGatewayId:
+    Type: String
+    Description: "Bedrock AgentCore Gateway ID."
+  AgentCoreTargetName:
+    Type: String
+    Description: >
+      Gateway target name as registered in AgentCore (hyphenated).
+      Used in ToolId construction.
+  ToolNamePrefix:
+    Type: String
+    Description: >
+      Target name with hyphens replaced by underscores.
+      Used as ToolName prefix. Example: if target is
+      'anycompany-demo-openapi-target', this should be
+      'anycompany_demo_openapi_target'.
+
+Resources:
+  OrchestrationAIAgent:
+    Type: AWS::Wisdom::AIAgent
+    Properties:
+      Name: !Sub "${InstanceAlias}-orchestration-agent"
+      Type: ORCHESTRATION
+      AssistantId: !Ref QInConnectAssistantIdOrArn
+      Configuration:
+        OrchestrationAIAgentConfiguration:
+          ConnectInstanceArn: !Ref ConnectInstanceArn
+          Locale: !Ref Locale
+          OrchestrationAIPromptId: !Ref OrchestrationPromptId
+          ToolConfigurations:
+            # =========================================
+            # Return-to-Control Tools
+            # =========================================
+            - ToolType: RETURN_TO_CONTROL
+              ToolName: Complete
+              InputSchema:
+                type: object
+                properties: {}
+                additionalProperties: false
+              Instruction:
+                Instruction: >
+                  Mark the conversation as complete ONLY after confirming the
+                  customer has no additional questions or needs. Always ask if
+                  there is anything else you can help with before using this tool.
+
+            - ToolType: RETURN_TO_CONTROL
+              ToolName: Escalate
+              InputSchema:
+                type: object
+                properties:
+                  reason:
+                    type: string
+                    description: "Why you are escalating"
+                required: ["reason"]
+                additionalProperties: false
+              Instruction:
+                Instruction: >
+                  Escalate to a human agent when you cannot provide adequate
+                  assistance, when other tools fail or return errors, or when
+                  the customer's request requires human intervention.
+
+            # =========================================
+            # MCP Tools — Account Lookup
+            # =========================================
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___lookupByPlate"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___lookupByPlate"
+              Instruction:
+                Instruction: "Look up an account using a license plate and state."
+
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___lookupByCitation"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___lookupByCitation"
+              Instruction:
+                Instruction: "Look up an account using a citation number."
+
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___lookupByAccount"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___lookupByAccount"
+              Instruction:
+                Instruction: "Look up an account using an account number and zip code."
+
+            # =========================================
+            # MCP Tools — Balance & Violations
+            # =========================================
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___getBalance"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___getBalance"
+              Instruction:
+                Instruction: "Get the balance summary for a known customer account."
+
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___getViolationDetails"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___getViolationDetails"
+              Instruction:
+                Instruction: "Get detailed violation information for a known customer account."
+
+            # =========================================
+            # MCP Tools — Disputes
+            # =========================================
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___submitDispute"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___submitDispute"
+              Instruction:
+                Instruction: "Submit a new dispute for a specific violation."
+
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___checkDisputeStatus"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___checkDisputeStatus"
+              Instruction:
+                Instruction: "Check the status of an existing dispute."
+
+            # =========================================
+            # MCP Tools — Payments
+            # =========================================
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___buildPaymentCart"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___buildPaymentCart"
+              Instruction:
+                Instruction: >
+                  Build a server-side payment cart for selected violations.
+                  MUST be called before initiatePayment. Returns cartId and
+                  paymentAmount needed for payment handoff.
+
+            - ToolType: MODEL_CONTEXT_PROTOCOL
+              ToolName: !Sub "${ToolNamePrefix}___initiatePayment"
+              ToolId: !Sub "gateway_${AgentCoreGatewayId}__${AgentCoreTargetName}___initiatePayment"
+              Instruction:
+                Instruction: >
+                  Initiate secure payment transfer. Requires cartId from
+                  buildPaymentCart, paymentAmount, and userConfirmed=true.
+                  After calling this tool, inform the customer you are
+                  transferring them to the secure payment system, then
+                  end the conversation.
+
+Outputs:
+  OrchestrationAIAgentId:
+    Description: "AI Agent ID"
+    Value: !Ref OrchestrationAIAgent
+  OrchestrationAIAgentArn:
+    Description: "AI Agent ARN"
+    Value: !GetAtt OrchestrationAIAgent.AIAgentArn

@@ -1,0 +1,797 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AnyCompany IVR - API Gateway for Lambda Tools'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  LambdaStackName:
+    Type: String
+    Default: anycompany-ivr-lambdas
+    Description: Name of the tool Lambda functions CloudFormation stack
+  PaymentsLambdaStackName:
+    Type: String
+    Default: anycompany-ivr-payments-lambdas
+    Description: Name of the payments Lambda functions CloudFormation stack
+
+Resources:
+  # ===========================================
+  # REST API
+  # ===========================================
+  IVRApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'anycompany-ivr-api-${Environment}'
+      Description: AnyCompany IVR API - Individual Tool Endpoints
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: anycompany-ivr
+
+  # ===========================================
+  # API DEPLOYMENT
+  # ===========================================
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - LookupByPlatePostMethod
+      - LookupByPlateOptionsMethod
+      - LookupByCitationPostMethod
+      - LookupByCitationOptionsMethod
+      - LookupByAccountPostMethod
+      - LookupByAccountOptionsMethod
+      - GetBalancePostMethod
+      - GetBalanceOptionsMethod
+      - GetViolationDetailsPostMethod
+      - GetViolationDetailsOptionsMethod
+      - SubmitDisputePostMethod
+      - SubmitDisputeOptionsMethod
+      - CheckDisputeStatusPostMethod
+      - CheckDisputeStatusOptionsMethod
+      - BuildCartPostMethod
+      - BuildCartOptionsMethod
+      - InitiatePaymentPostMethod
+      - InitiatePaymentOptionsMethod
+    Properties:
+      RestApiId: !Ref IVRApi
+      Description: !Sub 'Deployment for ${Environment}'
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref IVRApi
+      DeploymentId: !Ref ApiDeployment
+      StageName: !Ref Environment
+      Description: !Sub '${Environment} Stage'
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          LoggingLevel: INFO
+          DataTraceEnabled: true
+          MetricsEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ===========================================
+  # API KEY & USAGE PLAN
+  # ===========================================
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn: ApiStage
+    Properties:
+      Name: !Sub 'anycompany-ivr-api-key-${Environment}'
+      Description: API Key for AnyCompany IVR API
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref IVRApi
+          StageName: !Ref Environment
+
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      UsagePlanName: !Sub 'anycompany-ivr-usage-plan-${Environment}'
+      Description: Usage plan for AnyCompany IVR API
+      ApiStages:
+        - ApiId: !Ref IVRApi
+          Stage: !Ref Environment
+      Throttle:
+        BurstLimit: 500
+        RateLimit: 200
+      Quota:
+        Limit: 10000
+        Period: DAY
+
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # ===========================================
+  # /account RESOURCE
+  # ===========================================
+  AccountResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !GetAtt IVRApi.RootResourceId
+      PathPart: account
+
+  # ===========================================
+  # /account/lookup-by-plate
+  # ===========================================
+  LookupByPlateResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref AccountResource
+      PathPart: lookup-by-plate
+
+  LookupByPlateOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref LookupByPlateResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  LookupByPlatePostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref LookupByPlateResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-LookupByPlateFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  LookupByPlateLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-LookupByPlateFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/account/lookup-by-plate'
+
+  # ===========================================
+  # /account/lookup-by-citation
+  # ===========================================
+  LookupByCitationResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref AccountResource
+      PathPart: lookup-by-citation
+
+  LookupByCitationOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref LookupByCitationResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  LookupByCitationPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref LookupByCitationResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-LookupByCitationFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  LookupByCitationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-LookupByCitationFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/account/lookup-by-citation'
+
+  # ===========================================
+  # /account/lookup-by-account
+  # ===========================================
+  LookupByAccountResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref AccountResource
+      PathPart: lookup-by-account
+
+  LookupByAccountOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref LookupByAccountResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  LookupByAccountPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref LookupByAccountResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-LookupByAccountFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  LookupByAccountLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-LookupByAccountFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/account/lookup-by-account'
+
+  # ===========================================
+  # /balance RESOURCE
+  # ===========================================
+  BalanceResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !GetAtt IVRApi.RootResourceId
+      PathPart: balance
+
+  # ===========================================
+  # /balance/get-balance
+  # ===========================================
+  GetBalanceResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref BalanceResource
+      PathPart: get-balance
+
+  GetBalanceOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref GetBalanceResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  GetBalancePostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref GetBalanceResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-GetBalanceFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  GetBalanceLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-GetBalanceFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/balance/get-balance'
+
+  # ===========================================
+  # /balance/get-violation-details
+  # ===========================================
+  GetViolationDetailsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref BalanceResource
+      PathPart: get-violation-details
+
+  GetViolationDetailsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref GetViolationDetailsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  GetViolationDetailsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref GetViolationDetailsResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-GetViolationDetailsFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  GetViolationDetailsLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-GetViolationDetailsFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/balance/get-violation-details'
+
+  # ===========================================
+  # /disputes RESOURCE
+  # ===========================================
+  DisputesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !GetAtt IVRApi.RootResourceId
+      PathPart: disputes
+
+  # ===========================================
+  # /disputes/submit
+  # ===========================================
+  SubmitDisputeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref DisputesResource
+      PathPart: submit
+
+  SubmitDisputeOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref SubmitDisputeResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  SubmitDisputePostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref SubmitDisputeResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-SubmitDisputeFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+        - StatusCode: 201
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  SubmitDisputeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-SubmitDisputeFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/disputes/submit'
+
+  # ===========================================
+  # /disputes/status
+  # ===========================================
+  CheckDisputeStatusResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref DisputesResource
+      PathPart: status
+
+  CheckDisputeStatusOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref CheckDisputeStatusResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  CheckDisputeStatusPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref CheckDisputeStatusResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-CheckDisputeStatusFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  CheckDisputeStatusLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${LambdaStackName}-${Environment}-CheckDisputeStatusFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/disputes/status'
+
+  # ===========================================
+  # /payments RESOURCE
+  # ===========================================
+  PaymentsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !GetAtt IVRApi.RootResourceId
+      PathPart: payments
+
+  # ===========================================
+  # /payments/build-cart
+  # ===========================================
+  BuildCartResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref PaymentsResource
+      PathPart: build-cart
+
+  BuildCartOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref BuildCartResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  BuildCartPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref BuildCartResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${PaymentsLambdaStackName}-BuildPaymentCartFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  BuildCartLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${PaymentsLambdaStackName}-BuildPaymentCartFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/payments/build-cart'
+
+  # ===========================================
+  # /payments/initiate
+  # ===========================================
+  InitiatePaymentResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IVRApi
+      ParentId: !Ref PaymentsResource
+      PathPart: initiate
+
+  InitiatePaymentOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref InitiatePaymentResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  InitiatePaymentPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IVRApi
+      ResourceId: !Ref InitiatePaymentResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations'
+          - LambdaArn:
+              Fn::ImportValue: !Sub '${PaymentsLambdaStackName}-InitiatePaymentFunctionArn'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  InitiatePaymentLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub '${PaymentsLambdaStackName}-InitiatePaymentFunctionArn'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IVRApi}/*/POST/payments/initiate'
+
+  # ===========================================
+  # CLOUDWATCH LOG GROUP
+  # ===========================================
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/apigateway/anycompany-ivr-api-${Environment}'
+      RetentionInDays: 30
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway Endpoint URL
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiEndpoint'
+  ApiId:
+    Description: API Gateway ID
+    Value: !Ref IVRApi
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiId'
+  ApiKeyId:
+    Description: API Key ID
+    Value: !Ref ApiKey
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiKeyId'
+  LookupByPlateEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/account/lookup-by-plate'
+  LookupByCitationEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/account/lookup-by-citation'
+  LookupByAccountEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/account/lookup-by-account'
+  GetBalanceEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/balance/get-balance'
+  GetViolationDetailsEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/balance/get-violation-details'
+  SubmitDisputeEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/disputes/submit'
+  CheckDisputeStatusEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/disputes/status'
+  BuildCartEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/payments/build-cart'
+  InitiatePaymentEndpoint:
+    Value: !Sub 'https://${IVRApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/payments/initiate'

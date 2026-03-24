@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Nested: Bedrock AgentCore Gateway (MCP protocol)."
+
+Parameters:
+  AgentCoreGatewayName:
+    Type: String
+    Default: c001-ivr-mcp-gw
+    Description: "Short gateway name (<=21 chars) to keep GatewayId <= 32 for MCP namespace."
+
+  InstanceAlias:
+    Type: String
+  ConnectInstanceArn:
+    Type: String
+    Description: "Connect instance ARN (kept only for dependency ordering)."
+  
+  # ADDED: API Key Provider name for token vault access
+  ApiKeyProviderName:
+    Type: String
+    Default: anycompany-ivr-demo-apigw-api-key-provider
+    Description: "Name of the API key credential provider in AgentCore token vault"
+
+Resources:
+  AgentCoreGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock-agentcore.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        # Original policy — API Gateway and S3 access
+        - PolicyName: agentcore-gateway-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - execute-api:Invoke
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: "*"
+
+        # ADDED: Policy 1 — Workload identity + API key + secrets access
+        # Without this, gateway fails with:
+        # "Failed to fetch outbound api key. Failed to get workload identity token"
+        - PolicyName: AgentCoreIdentityAndApiKeyAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: GetWorkloadAccessToken
+                Effect: Allow
+                Action:
+                  - bedrock-agentcore:GetWorkloadAccessToken
+                Resource:
+                  - !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:workload-identity-directory/default"
+                  - !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:workload-identity-directory/default/workload-identity/${AgentCoreGatewayName}-*"
+              - Sid: GetResourceApiKey
+                Effect: Allow
+                Action:
+                  - bedrock-agentcore:GetResourceApiKey
+                Resource:
+                  - !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:token-vault/default"
+                  - !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:token-vault/default/apikeycredentialprovider/${ApiKeyProviderName}"
+                  - !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:workload-identity-directory/default"
+                  - !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:workload-identity-directory/default/workload-identity/${AgentCoreGatewayName}-*"
+              - Sid: GetSecretValue
+                Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:bedrock-agentcore-identity!default/apikey/${ApiKeyProviderName}-*"
+
+        # ADDED: Policy 2 — Gateway self-access
+        - PolicyName: AgentCoreGatewayAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: GetGateway
+                Effect: Allow
+                Action:
+                  - bedrock-agentcore:GetGateway
+                Resource:
+                  - !Sub "arn:aws:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:gateway/${AgentCoreGatewayName}-*"
+
+  AgentCoreGateway:
+    Type: AWS::BedrockAgentCore::Gateway
+    Properties:
+      Name: !Ref AgentCoreGatewayName
+      ProtocolType: MCP
+      AuthorizerType: CUSTOM_JWT
+      RoleArn: !GetAtt AgentCoreGatewayRole.Arn
+      AuthorizerConfiguration:
+        CustomJWTAuthorizer:
+          DiscoveryUrl: !Sub "https://${InstanceAlias}.my.connect.aws/.well-known/openid-configuration"
+          AllowedAudience:
+            - "placeholder-aud"
+          AllowedClients:
+            - "placeholder-client"
+
+Outputs:
+  GatewayId:
+    Value: !Ref AgentCoreGateway
+  GatewayUrl:
+    Value: !GetAtt AgentCoreGateway.GatewayUrl
+  GatewayRoleArn:
+    Value: !GetAtt AgentCoreGatewayRole.Arn
+    Description: "Gateway IAM role ARN (for debugging permission issues)"

@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Nested: Bedrock AgentCore Gateway Target using OpenAPI schema stored in S3."
+
+Parameters:
+  InstanceAlias:
+    Type: String
+  GatewayId:
+    Type: String
+  OpenApiSchemaBucket:
+    Type: String
+  OpenApiSchemaKey:
+    Type: String
+  ApiKeyCredentialProviderArn:
+    Type: String
+  TargetName:
+    Type: String
+    Default: ""
+    Description: >
+      Optional override for the gateway target name.
+      Must use only lowercase letters, numbers, and hyphens.
+      If empty, defaults to ${InstanceAlias}-openapi-target.
+  ToolNamePrefix:
+    Type: String
+    Default: ""
+    Description: >
+      The target name with hyphens replaced by underscores, used as the
+      ToolName prefix in QAgents. Must contain only letters, numbers,
+      and underscores. If empty, deploy script must compute it.
+
+Conditions:
+  HasTargetName: !Not [!Equals [!Ref TargetName, ""]]
+  HasToolPrefix: !Not [!Equals [!Ref ToolNamePrefix, ""]]
+
+Resources:
+  GatewayTarget:
+    Type: AWS::BedrockAgentCore::GatewayTarget
+    Properties:
+      GatewayIdentifier: !Ref GatewayId
+      Name: !If
+        - HasTargetName
+        - !Ref TargetName
+        - !Sub "${InstanceAlias}-openapi-target"
+      TargetConfiguration:
+        Mcp:
+          OpenApiSchema:
+            S3:
+              Uri: !Sub "s3://${OpenApiSchemaBucket}/${OpenApiSchemaKey}"
+      CredentialProviderConfigurations:
+        - CredentialProviderType: API_KEY
+          CredentialProvider:
+            ApiKeyCredentialProvider:
+              ProviderArn: !Ref ApiKeyCredentialProviderArn
+              CredentialLocation: HEADER
+              CredentialParameterName: "x-api-key"
+
+Outputs:
+  GatewayTargetId:
+    Value: !Ref GatewayTarget
+  AgentCoreTargetName:
+    Description: "Gateway target name (hyphenated, as registered in AgentCore)"
+    Value: !If
+      - HasTargetName
+      - !Ref TargetName
+      - !Sub "${InstanceAlias}-openapi-target"
+  ToolNamePrefix:
+    Description: "Target name sanitized for ToolName (underscores instead of hyphens)"
+    Value: !If
+      - HasToolPrefix
+      - !Ref ToolNamePrefix
+      - "COMPUTE_IN_DEPLOY_SCRIPT"

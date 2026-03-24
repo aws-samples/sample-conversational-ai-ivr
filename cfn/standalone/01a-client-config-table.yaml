@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AnyCompany IVR - Client Configuration DynamoDB Table'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+Resources:
+  # ===========================================
+  # CLIENT CONFIGURATION TABLE
+  # ===========================================
+  ClientConfigTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'anycompany-ivr-client-config-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      
+      # Attribute Definitions
+      AttributeDefinitions:
+        - AttributeName: clientId
+          AttributeType: S
+        - AttributeName: phoneNumber
+          AttributeType: S
+      
+      # Primary Key
+      KeySchema:
+        - AttributeName: clientId
+          KeyType: HASH
+      
+      # Global Secondary Index for Phone Number Lookup
+      GlobalSecondaryIndexes:
+        - IndexName: PhoneNumber-Index
+          KeySchema:
+            - AttributeName: phoneNumber
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      
+      # Enable Point-in-Time Recovery
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      
+      # Enable Server-Side Encryption
+      SSESpecification:
+        SSEEnabled: true
+      
+      # Tags
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: anycompany-ivr
+        - Key: Purpose
+          Value: ClientConfiguration
+
+Outputs:
+  ClientConfigTableName:
+    Description: Client Configuration Table Name
+    Value: !Ref ClientConfigTable
+    Export:
+      Name: !Sub '${AWS::StackName}-ClientConfigTableName'
+  
+  ClientConfigTableArn:
+    Description: Client Configuration Table ARN
+    Value: !GetAtt ClientConfigTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ClientConfigTableArn'
+  
+  PhoneNumberIndexName:
+    Description: Phone Number GSI Name
+    Value: PhoneNumber-Index
+    Export:
+      Name: !Sub '${AWS::StackName}-PhoneNumberIndexName'

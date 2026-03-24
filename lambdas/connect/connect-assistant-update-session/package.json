@@ -1,0 +1,8 @@
+{
+  "name": "connect-assistant-update-session",
+  "version": "1.0.0",
+  "description": "Updates Amazon Q in Connect session with contact attributes",
+  "main": "index.js",
+  "dependencies": {},
+  "engines": { "node": ">=20.0.0" }
+}

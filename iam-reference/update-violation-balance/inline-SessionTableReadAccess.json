@@ -1,0 +1,21 @@
+{
+    "RoleName": "ivr-dev-UpdateViolationBalanceRole",
+    "PolicyName": "SessionTableReadAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:Query",
+                    "dynamodb:UpdateItem"
+                ],
+                "Resource": [
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/ivr-dev-IVRSessionContext",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/ivr-dev-IVRSessionContext/index/*"
+                ],
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

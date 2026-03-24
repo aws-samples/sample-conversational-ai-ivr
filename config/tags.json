@@ -1,0 +1,5 @@
+[
+    {"Key": "Project", "Value": "anycompany-ivr"},
+    {"Key": "Environment", "Value": "dev"},
+    {"Key": "ManagedBy", "Value": "cloudformation"}
+]

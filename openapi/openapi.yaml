@@ -1,0 +1,1438 @@
+openapi: 3.0.1
+info:
+  title: AnyCompany IVR API
+  description: 'REST API for AnyCompany AI IVR system supporting customer identification,
+
+    balance inquiries, violation details, and dispute management for parking
+
+    and tolling services. This API powers the Bedrock Agent tools for the
+
+    conversational IVR system integrated with Amazon Connect.
+
+    '
+  version: 1.0.0
+  contact:
+    name: AnyCompany IVR Team
+  license:
+    name: MIT
+servers:
+- url: https://PLACEHOLDER.execute-api.us-east-1.amazonaws.com/dev
+  description: AWS API Gateway endpoint
+paths:
+  /account/lookup-by-plate:
+    post:
+      operationId: lookupByPlate
+      summary: Look up account by license plate and state
+      description: 'Search for customer account using license plate number and state.
+
+        Used for servicing clients to identify customers with parking violations.
+
+        This is the primary identification method for servicing client types.
+
+        '
+      tags:
+      - Customer Identification
+      security:
+      - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - licensePlate
+              - state
+              - clientId
+              properties:
+                licensePlate:
+                  type: string
+                  description: Vehicle license plate number
+                  example: ABC1234
+                state:
+                  type: string
+                  description: US state code where vehicle is registered (2 letter
+                    code)
+                  example: FL
+                clientId:
+                  type: string
+                  description: Client identifier for data isolation
+                  example: CLIENT_001
+                sessionId:
+                  type: string
+                  description: Optional session identifier for tracking
+                  example: sess_abc123
+      responses:
+        '200':
+          description: Account lookup completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the operation was successful
+                    example: true
+                  accountFound:
+                    type: boolean
+                    description: Whether an account was found
+                    example: true
+                  customerId:
+                    type: string
+                    description: Unique customer identifier
+                    example: cust_456
+                  customerName:
+                    type: string
+                    description: Customer's name on file
+                    example: John Smith
+                  totalBalance:
+                    type: number
+                    format: float
+                    description: Total outstanding balance
+                    example: 250.0
+                  violationCount:
+                    type: integer
+                    description: Number of active violations
+                    example: 2
+                  accountStatus:
+                    type: string
+                    enum:
+                    - ACTIVE
+                    - SUSPENDED
+                    - COLLECTIONS
+                    - CLOSED
+                    description: Current account status
+                    example: ACTIVE
+                  isPayable:
+                    type: boolean
+                    description: Whether account is eligible for IVR payment
+                    example: true
+                  requiresAgentAssistance:
+                    type: boolean
+                    description: Whether account requires agent handling
+                    example: false
+                  message:
+                    type: string
+                    description: Human-readable message about the result
+                    example: Account found with 2 outstanding violation(s)
+              example:
+                success: true
+                accountFound: true
+                customerId: cust_456
+                customerName: John Smith
+                totalBalance: 250.0
+                violationCount: 2
+                accountStatus: ACTIVE
+                isPayable: true
+                requiresAgentAssistance: false
+                message: Account found with 2 outstanding violation(s)
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No account found for the provided information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  accountFound:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: No account found with the provided license plate and
+                      state
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - Verify the license plate number is correct
+                    - Ensure the state code matches your vehicle registration
+                    - Try using your citation number instead
+  /account/lookup-by-citation:
+    post:
+      operationId: lookupByCitation
+      summary: Look up account by citation number
+      description: 'Search for customer account using a citation or ticket number.
+
+        Alternative identification method for servicing clients when
+
+        customer has their citation number available.
+
+        '
+      tags:
+      - Customer Identification
+      security:
+      - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - citationNumber
+              - clientId
+              properties:
+                citationNumber:
+                  type: string
+                  description: Citation or ticket number
+                  example: CIT-2024-001234
+                clientId:
+                  type: string
+                  description: Client identifier for data isolation
+                  example: CLIENT_001
+                sessionId:
+                  type: string
+                  description: Optional session identifier for tracking
+                  example: sess_abc123
+      responses:
+        '200':
+          description: Account lookup completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  accountFound:
+                    type: boolean
+                    example: true
+                  customerId:
+                    type: string
+                    example: cust_456
+                  customerName:
+                    type: string
+                    example: John Smith
+                  totalBalance:
+                    type: number
+                    format: float
+                    example: 250.0
+                  violationCount:
+                    type: integer
+                    example: 2
+                  accountStatus:
+                    type: string
+                    enum:
+                    - ACTIVE
+                    - SUSPENDED
+                    - COLLECTIONS
+                    - CLOSED
+                    example: ACTIVE
+                  isPayable:
+                    type: boolean
+                    example: true
+                  requiresAgentAssistance:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Account found with 2 outstanding violation(s)
+              example:
+                success: true
+                accountFound: true
+                customerId: cust_456
+                customerName: John Smith
+                totalBalance: 250.0
+                violationCount: 2
+                accountStatus: ACTIVE
+                isPayable: true
+                requiresAgentAssistance: false
+                message: Account found with 2 outstanding violation(s)
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No account found for the provided citation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  accountFound:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: No account found with the provided citation number
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - Verify the citation number is correct
+                    - Try using your license plate number instead
+                    - Contact customer service for assistance
+  /account/lookup-by-account:
+    post:
+      operationId: lookupByAccount
+      summary: Look up account by account number and zip code
+      description: 'Search for customer account using account number and zip code.
+
+        Primary identification method for collections clients. Requires
+
+        both account number and zip code for security verification.
+
+        '
+      tags:
+      - Customer Identification
+      security:
+      - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - accountNumber
+              - zipCode
+              - clientId
+              properties:
+                accountNumber:
+                  type: string
+                  description: Customer account number
+                  example: ACC-100001
+                zipCode:
+                  type: string
+                  description: Customer's billing zip code for verification
+                  example: '33101'
+                clientId:
+                  type: string
+                  description: Client identifier for data isolation
+                  example: CLIENT_002
+                sessionId:
+                  type: string
+                  description: Optional session identifier for tracking
+                  example: sess_xyz789
+      responses:
+        '200':
+          description: Account lookup completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  accountFound:
+                    type: boolean
+                    example: true
+                  customerId:
+                    type: string
+                    example: cust_456
+                  customerName:
+                    type: string
+                    example: John Smith
+                  totalBalance:
+                    type: number
+                    format: float
+                    example: 250.0
+                  violationCount:
+                    type: integer
+                    example: 2
+                  accountStatus:
+                    type: string
+                    enum:
+                    - ACTIVE
+                    - SUSPENDED
+                    - COLLECTIONS
+                    - CLOSED
+                    example: ACTIVE
+                  isPayable:
+                    type: boolean
+                    example: true
+                  requiresAgentAssistance:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Account found with 2 outstanding violation(s)
+              example:
+                success: true
+                accountFound: true
+                customerId: cust_456
+                customerName: John Smith
+                totalBalance: 250.0
+                violationCount: 2
+                accountStatus: ACTIVE
+                isPayable: true
+                requiresAgentAssistance: false
+                message: Account found with 2 outstanding violation(s)
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No account found or zip code verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  accountFound:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: No account found with the provided account number and
+                      zip code
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - Verify the account number is correct
+                    - Ensure the zip code matches your billing address
+                    - Contact customer service for assistance
+  /balance/get-balance:
+    post:
+      operationId: getBalance
+      summary: Get account balance summary
+      description: 'Retrieve the current balance and summary information for a customer
+        account.
+
+        Returns total amount due, number of violations, payment eligibility, and
+
+        account status. Use this after customer identification to provide balance
+        info.
+
+        '
+      tags:
+      - Balance Services
+      security:
+      - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - customerId
+              - clientId
+              properties:
+                customerId:
+                  type: string
+                  description: Unique customer identifier (obtained from lookup)
+                  example: cust_456
+                clientId:
+                  type: string
+                  description: Client identifier for data isolation
+                  example: CLIENT_001
+                sessionId:
+                  type: string
+                  description: Optional session identifier for tracking
+                  example: sess_abc123
+      responses:
+        '200':
+          description: Balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  customerId:
+                    type: string
+                    example: cust_456
+                  customerName:
+                    type: string
+                    example: John Smith
+                  totalBalance:
+                    type: number
+                    format: float
+                    description: Total amount due across all violations
+                    example: 250.0
+                  totalPayableBalance:
+                    type: number
+                    format: float
+                    description: Amount eligible for IVR payment
+                    example: 250.0
+                  violationCount:
+                    type: integer
+                    description: Total number of open violations
+                    example: 2
+                  payableViolationCount:
+                    type: integer
+                    description: Number of violations eligible for payment
+                    example: 2
+                  oldestViolationDate:
+                    type: string
+                    format: date
+                    description: Date of oldest outstanding violation
+                    example: '2024-01-10'
+                  accountStatus:
+                    type: string
+                    enum:
+                    - ACTIVE
+                    - SUSPENDED
+                    - COLLECTIONS
+                    - CLOSED
+                    example: ACTIVE
+                  hasPaymentPlan:
+                    type: boolean
+                    description: Whether customer has active payment plan
+                    example: false
+                  lastPaymentDate:
+                    type: string
+                    format: date
+                    description: Date of last payment (if any)
+                    example: '2023-12-15'
+                  lastPaymentAmount:
+                    type: number
+                    format: float
+                    description: Amount of last payment
+                    example: 50.0
+                  message:
+                    type: string
+                    description: Human-readable balance summary
+                    example: Your current balance is $250.00 for 2 violation(s)
+              example:
+                success: true
+                customerId: cust_456
+                customerName: John Smith
+                totalBalance: 250.0
+                totalPayableBalance: 250.0
+                violationCount: 2
+                payableViolationCount: 2
+                oldestViolationDate: '2024-01-10'
+                accountStatus: ACTIVE
+                hasPaymentPlan: false
+                lastPaymentDate: '2023-12-15'
+                lastPaymentAmount: 50.0
+                message: Your current balance is $250.00 for 2 violation(s)
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /balance/get-violation-details:
+    post:
+      operationId: getViolationDetails
+      summary: Get detailed violation information
+      description: 'Retrieve detailed information about all violations associated
+        with a customer account.
+
+        Includes violation type, amount, date, location, and payment/dispute eligibility.
+
+        Can optionally retrieve a specific violation by ID or include payment history.
+
+        '
+      tags:
+      - Balance Services
+      security:
+      - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - customerId
+              - clientId
+              properties:
+                customerId:
+                  type: string
+                  description: Unique customer identifier
+                  example: cust_456
+                clientId:
+                  type: string
+                  description: Client identifier for data isolation
+                  example: CLIENT_001
+                violationId:
+                  type: string
+                  description: Optional - specific violation ID to retrieve
+                  example: viol_001
+                includeHistory:
+                  type: boolean
+                  description: Include payment history for violations
+                  default: false
+                  example: false
+                sessionId:
+                  type: string
+                  description: Optional session identifier for tracking
+                  example: sess_abc123
+      responses:
+        '200':
+          description: Violation details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  customerId:
+                    type: string
+                    example: cust_456
+                  violations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Violation'
+                  totalCount:
+                    type: integer
+                    description: Total number of violations returned
+                    example: 2
+                  totalAmount:
+                    type: number
+                    format: float
+                    description: Sum of all violation amounts
+                    example: 250.0
+                  message:
+                    type: string
+                    example: Found 2 violation(s) totaling $250.00
+              example:
+                success: true
+                customerId: cust_456
+                violations:
+                - violationId: viol_001
+                  citationNumber: CIT-2024-001234
+                  violationType: PARKING
+                  amount: 75.0
+                  originalAmount: 50.0
+                  lateFees: 25.0
+                  violationDate: '2024-01-10'
+                  dueDate: '2024-02-10'
+                  location: 123 Main St, Miami, FL
+                  licensePlate: ABC1234
+                  vehicleState: FL
+                  status: OPEN
+                  isPayable: true
+                  isDisputable: true
+                  hasActiveDispute: false
+                - violationId: viol_002
+                  citationNumber: CIT-2024-001235
+                  violationType: PARKING
+                  amount: 175.0
+                  originalAmount: 100.0
+                  lateFees: 75.0
+                  violationDate: '2024-01-12'
+                  dueDate: '2024-02-12'
+                  location: 456 Oak Ave, Miami, FL
+                  licensePlate: ABC1234
+                  vehicleState: FL
+                  status: OPEN
+                  isPayable: true
+                  isDisputable: true
+                  hasActiveDispute: false
+                totalCount: 2
+                totalAmount: 250.0
+                message: Found 2 violation(s) totaling $250.00
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Customer or violation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /disputes/submit:
+    post:
+      operationId: submitDispute
+      summary: Submit a new dispute
+      description: 'Create a new dispute for a specific violation. Customer must provide
+
+        a reason category for the dispute. Returns a dispute reference number
+
+        for tracking. The violation status will be updated to DISPUTED.
+
+        '
+      tags:
+      - Dispute Services
+      security:
+      - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - customerId
+              - clientId
+              - violationId
+              - disputeReason
+              properties:
+                customerId:
+                  type: string
+                  description: Unique customer identifier
+                  example: cust_456
+                clientId:
+                  type: string
+                  description: Client identifier for data isolation
+                  example: CLIENT_001
+                violationId:
+                  type: string
+                  description: Violation ID being disputed
+                  example: viol_001
+                disputeReason:
+                  type: string
+                  enum:
+                  - NOT_MY_VEHICLE
+                  - ALREADY_PAID
+                  - INCORRECT_AMOUNT
+                  - SIGNAGE_ISSUE
+                  - METER_MALFUNCTION
+                  - PERMIT_VALID
+                  - EMERGENCY_SITUATION
+                  - OTHER
+                  description: Reason category for the dispute
+                  example: NOT_MY_VEHICLE
+                disputeDetails:
+                  type: string
+                  description: Additional details about the dispute (max 1000 chars)
+                  maxLength: 1000
+                  example: My vehicle was stolen and I have a police report
+                contactPhone:
+                  type: string
+                  description: Contact phone number for dispute follow-up
+                  example: +1-555-123-4567
+                contactEmail:
+                  type: string
+                  format: email
+                  description: Contact email for dispute follow-up
+                  example: customer@email.com
+                sessionId:
+                  type: string
+                  description: Optional session identifier for tracking
+                  example: sess_abc123
+      responses:
+        '201':
+          description: Dispute submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  disputeId:
+                    type: string
+                    description: Unique dispute identifier
+                    example: disp_789abc
+                  referenceNumber:
+                    type: string
+                    description: Customer-friendly reference number
+                    example: DSP-2024-A1B2C3
+                  status:
+                    type: string
+                    enum:
+                    - SUBMITTED
+                    - PENDING_REVIEW
+                    - UNDER_REVIEW
+                    - RESOLVED
+                    - REJECTED
+                    description: Current dispute status
+                    example: SUBMITTED
+                  violationId:
+                    type: string
+                    description: Violation being disputed
+                    example: viol_001
+                  estimatedResolutionDays:
+                    type: integer
+                    description: Estimated business days until resolution
+                    example: 14
+                  message:
+                    type: string
+                    example: 'Your dispute has been submitted successfully. Reference
+                      number: DSP-2024-A1B2C3'
+                  nextSteps:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - You will receive an email confirmation shortly
+                    - Allow 10-14 business days for review
+                    - You can check status anytime using your reference number
+                  createdAt:
+                    type: string
+                    format: date-time
+                    example: '2024-01-15T10:30:00Z'
+              example:
+                success: true
+                disputeId: disp_789abc
+                referenceNumber: DSP-2024-A1B2C3
+                status: SUBMITTED
+                violationId: viol_001
+                estimatedResolutionDays: 14
+                message: 'Your dispute has been submitted successfully. Reference
+                  number: DSP-2024-A1B2C3'
+                nextSteps:
+                - You will receive an email confirmation shortly
+                - Allow 10-14 business days for review
+                - You can check status anytime using your reference number
+                createdAt: '2024-01-15T10:30:00Z'
+        '400':
+          description: Bad request - missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Customer or violation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - dispute already exists for this violation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: A dispute already exists for this violation
+                  code:
+                    type: string
+                    example: DISPUTE_EXISTS
+                  details:
+                    type: string
+                    example: 'Existing dispute ID: disp_existing123'
+  /disputes/status:
+    post:
+      operationId: checkDisputeStatus
+      summary: Check dispute status
+      description: 'Retrieve the current status of a dispute. Can look up by disputeId,
+
+        violationId, or referenceNumber. Returns status, timeline, and
+
+        resolution details if resolved.
+
+        '
+      tags:
+      - Dispute Services
+      security:
+      - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - clientId
+              properties:
+                disputeId:
+                  type: string
+                  description: Unique dispute identifier
+                  example: disp_789abc
+                violationId:
+                  type: string
+                  description: Original violation ID (alternative lookup)
+                  example: viol_001
+                referenceNumber:
+                  type: string
+                  description: Customer reference number (alternative lookup)
+                  example: DSP-2024-A1B2C3
+                customerId:
+                  type: string
+                  description: Customer ID for verification (optional)
+                  example: cust_456
+                clientId:
+                  type: string
+                  description: Client identifier for data isolation
+                  example: CLIENT_001
+                sessionId:
+                  type: string
+                  description: Optional session identifier for tracking
+                  example: sess_abc123
+      responses:
+        '200':
+          description: Dispute status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  disputeFound:
+                    type: boolean
+                    example: true
+                  disputeId:
+                    type: string
+                    example: disp_789abc
+                  referenceNumber:
+                    type: string
+                    example: DSP-2024-A1B2C3
+                  violationId:
+                    type: string
+                    example: viol_001
+                  citationNumber:
+                    type: string
+                    example: CIT-2024-001234
+                  status:
+                    type: string
+                    enum:
+                    - SUBMITTED
+                    - PENDING_REVIEW
+                    - UNDER_REVIEW
+                    - RESOLVED
+                    - REJECTED
+                    example: UNDER_REVIEW
+                  disputeReason:
+                    type: string
+                    example: NOT_MY_VEHICLE
+                  disputeDetails:
+                    type: string
+                    example: My vehicle was stolen and I have a police report
+                  submittedDate:
+                    type: string
+                    format: date-time
+                    example: '2024-01-15T10:30:00Z'
+                  lastUpdatedDate:
+                    type: string
+                    format: date-time
+                    example: '2024-01-17T14:00:00Z'
+                  estimatedResolutionDate:
+                    type: string
+                    format: date
+                    example: '2024-01-29'
+                  resolution:
+                    $ref: '#/components/schemas/DisputeResolution'
+                  timeline:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DisputeTimelineEvent'
+                  message:
+                    type: string
+                    example: Your dispute is currently under review
+              example:
+                success: true
+                disputeFound: true
+                disputeId: disp_789abc
+                referenceNumber: DSP-2024-A1B2C3
+                violationId: viol_001
+                citationNumber: CIT-2024-001234
+                status: UNDER_REVIEW
+                disputeReason: NOT_MY_VEHICLE
+                disputeDetails: My vehicle was stolen and I have a police report
+                submittedDate: '2024-01-15T10:30:00Z'
+                lastUpdatedDate: '2024-01-17T14:00:00Z'
+                estimatedResolutionDate: '2024-01-29'
+                resolution: null
+                timeline:
+                - date: '2024-01-15T10:30:00Z'
+                  event: SUBMITTED
+                  details: Dispute submitted via IVR
+                - date: '2024-01-17T14:00:00Z'
+                  event: UNDER_REVIEW
+                  details: Assigned to review team
+                message: Your dispute is currently under review
+        '400':
+          description: Bad request - must provide disputeId, violationId, or referenceNumber
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - API key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Dispute not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  disputeFound:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: No dispute found with the provided information
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - Verify the dispute reference number is correct
+                    - Try using the original violation ID
+                    - Contact customer service for assistance
+  /payments/build-cart:
+    post:
+      tags:
+      - payments
+      summary: Build a server-side payment cart for selected violations
+      operationId: buildPaymentCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountNumber:
+                  type: string
+                customerId:
+                  type: string
+                paymentType:
+                  type: string
+                  enum:
+                  - ALL_PAYABLE
+                  - SPECIFIC
+                  - FULL_BALANCE
+                  - PARTIAL_VIOLATION_SELECTION
+                  - PARTIAL_AMOUNT
+                violationIds:
+                  type: array
+                  items:
+                    type: string
+                violationAmounts:
+                  type: array
+                  items:
+                    type: string
+                clientId:
+                  type: string
+                sessionId:
+                  type: string
+                  description: Session identifier for tracking
+              required:
+              - paymentType
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cartId:
+                    type: string
+                  paymentAmount:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        violationId:
+                          type: string
+                        amount:
+                          type: string
+                      required:
+                      - violationId
+                      - amount
+                  expiresAt:
+                    type: integer
+                required:
+                - cartId
+                - paymentAmount
+  /payments/initiate:
+    post:
+      tags:
+      - payments
+      summary: Arm payment handoff by returning Lex sessionAttributes with Tool=Payment
+      operationId: initiatePayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cartId:
+                  type: string
+                accountNumber:
+                  type: string
+                customerId:
+                  type: string
+                paymentAmount:
+                  type: string
+                paymentReason:
+                  type: string
+                clientId:
+                  type: string
+                userConfirmed:
+                  type: boolean
+                sessionId:
+                  type: string
+                  description: Session identifier for tracking
+              required:
+              - cartId
+              - paymentAmount
+              - userConfirmed
+              - sessionId
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  shouldTransfer:
+                    type: boolean
+                  sessionAttributes:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  message:
+                    type: string
+                required:
+                - success
+                - shouldTransfer
+                - sessionAttributes
+  /payments/apply-result:
+    post:
+      tags:
+      - payments
+      summary: Apply payment result to violations using cartId
+      operationId: applyPaymentResult
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cartId:
+                  type: string
+                accountNumber:
+                  type: string
+                customerId:
+                  type: string
+                paymentStatus:
+                  type: string
+                  enum:
+                  - SUCCESS
+                  - DECLINED
+                  - CANCELLED
+                  - FAILED
+                transactionId:
+                  type: string
+                paidAmount:
+                  type: string
+                clientId:
+                  type: string
+              required:
+              - cartId
+              - paymentStatus
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updateStatus:
+                    type: string
+                    enum:
+                    - UPDATED
+                    - PARTIAL
+                    - NOOP
+                    - FAILED
+                  updatedViolations:
+                    type: array
+                    items:
+                      type: string
+                  failedViolations:
+                    type: array
+                    items:
+                      type: string
+                  message:
+                    type: string
+                required:
+                - updateStatus
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+  schemas:
+    Violation:
+      type: object
+      description: Detailed violation information
+      properties:
+        violationId:
+          type: string
+          description: Unique violation identifier
+          example: viol_001
+        citationNumber:
+          type: string
+          description: Citation or ticket number
+          example: CIT-2024-001234
+        violationType:
+          type: string
+          enum:
+          - PARKING
+          - TOLL
+          - RED_LIGHT
+          - SPEED
+          - OTHER
+          description: Type of violation
+          example: PARKING
+        amount:
+          type: number
+          format: float
+          description: Current amount due (including fees)
+          example: 75.0
+        originalAmount:
+          type: number
+          format: float
+          description: Original violation amount before fees
+          example: 50.0
+        lateFees:
+          type: number
+          format: float
+          description: Late fees added
+          example: 25.0
+        violationDate:
+          type: string
+          format: date
+          description: Date violation occurred
+          example: '2024-01-10'
+        dueDate:
+          type: string
+          format: date
+          description: Payment due date
+          example: '2024-02-10'
+        location:
+          type: string
+          description: Location where violation occurred
+          example: 123 Main St, Miami, FL
+        licensePlate:
+          type: string
+          description: Vehicle license plate
+          example: ABC1234
+        vehicleState:
+          type: string
+          description: Vehicle registration state
+          example: FL
+        status:
+          type: string
+          enum:
+          - OPEN
+          - PAID
+          - PARTIAL
+          - DISPUTED
+          - COLLECTIONS
+          - VOID
+          description: Current violation status
+          example: OPEN
+        isPayable:
+          type: boolean
+          description: Whether this violation can be paid via IVR
+          example: true
+        isDisputable:
+          type: boolean
+          description: Whether this violation can be disputed
+          example: true
+        hasActiveDispute:
+          type: boolean
+          description: Whether there's an active dispute for this violation
+          example: false
+        disputeId:
+          type: string
+          description: Associated dispute ID (if any)
+          example: null
+        paymentHistory:
+          type: array
+          description: Payment history (if requested)
+          items:
+            type: object
+            properties:
+              paymentDate:
+                type: string
+                format: date-time
+              amount:
+                type: number
+                format: float
+              confirmationNumber:
+                type: string
+    DisputeResolution:
+      type: object
+      description: Resolution details for completed disputes
+      nullable: true
+      properties:
+        outcome:
+          type: string
+          enum:
+          - APPROVED
+          - DENIED
+          - PARTIAL
+          description: Resolution outcome
+          example: APPROVED
+        resolvedDate:
+          type: string
+          format: date-time
+          description: When dispute was resolved
+          example: '2024-01-28T16:00:00Z'
+        resolvedBy:
+          type: string
+          description: Agent or system that resolved
+          example: Agent Smith
+        notes:
+          type: string
+          description: Resolution notes
+          example: Police report verified. Violation voided.
+        adjustedAmount:
+          type: number
+          format: float
+          description: Adjusted amount after resolution (if partial)
+          example: 0.0
+    DisputeTimelineEvent:
+      type: object
+      description: Event in dispute timeline
+      properties:
+        date:
+          type: string
+          format: date-time
+          description: When event occurred
+          example: '2024-01-15T10:30:00Z'
+        event:
+          type: string
+          description: Event type
+          example: SUBMITTED
+        details:
+          type: string
+          description: Event details
+          example: Dispute submitted via IVR
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+          example: Missing required parameters
+        code:
+          type: string
+          description: Error code for programmatic handling
+          example: MISSING_PARAMETERS
+        details:
+          type: string
+          description: Additional error details
+          example: 'Missing fields: licensePlate, state'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+security:
+- ApiKeyAuth: []
+tags:
+- name: Customer Identification
+  description: 'Operations for identifying customers by various methods.
+
+    - **lookupByPlate**: Primary method for servicing clients (license plate + state)
+
+    - **lookupByCitation**: Alternative method using citation number
+
+    - **lookupByAccount**: Primary method for collections clients (account + zip)
+
+    '
+- name: Balance Services
+  description: 'Operations for balance inquiries and violation details.
+
+    - **getBalance**: Get account balance summary
+
+    - **getViolationDetails**: Get detailed violation information
+
+    '
+- name: Dispute Services
+  description: 'Operations for submitting and tracking disputes.
+
+    - **submitDispute**: Create a new dispute for a violation
+
+    - **checkDisputeStatus**: Check status of existing dispute
+
+    '
+- name: payments
+  description: Payment cart and post-payment reconciliation

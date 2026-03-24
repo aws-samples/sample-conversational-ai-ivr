@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Nested: Amazon Connect instance"
+
+Parameters:
+  InstanceAlias:
+    Type: String
+
+Resources:
+  ConnectInstance:
+    Type: AWS::Connect::Instance
+    Properties:
+      IdentityManagementType: CONNECT_MANAGED
+      InstanceAlias: !Ref InstanceAlias
+      Attributes:
+        InboundCalls: true
+        OutboundCalls: true
+        ContactflowLogs: true
+        ContactLens: false
+        AutoResolveBestVoices: true
+        UseCustomTTSVoices: false
+
+Outputs:
+  ConnectInstanceId:
+    Value: !GetAtt ConnectInstance.Id
+  ConnectInstanceArn:
+    Value: !GetAtt ConnectInstance.Arn

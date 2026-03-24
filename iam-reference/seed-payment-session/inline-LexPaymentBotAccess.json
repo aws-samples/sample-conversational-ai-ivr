@@ -1,0 +1,24 @@
+{
+    "RoleName": "ivr-dev-SeedPaymentSessionRole",
+    "PolicyName": "LexPaymentBotAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "LexPutSession",
+                "Effect": "Allow",
+                "Action": [
+                    "lex:PutSession",
+                    "lex:RecognizeText",
+                    "lex:RecognizeUtterance",
+                    "lex:DeleteSession",
+                    "lex:GetSession"
+                ],
+                "Resource": [
+                    "arn:aws:lex:us-east-1:123456789012:bot-alias/PAY_BOT_ID_PLACEHOLDER/PAY_BOT_ALIAS_PLACEHOLDER",
+                    "arn:aws:lex:us-east-1:123456789012:bot/PAY_BOT_ID_PLACEHOLDER"
+                ]
+            }
+        ]
+    }
+}

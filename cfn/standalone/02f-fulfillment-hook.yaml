@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AnyCompany IVR - QinConnect Fulfillment Code Hook Lambda'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  SessionTableStackName:
+    Type: String
+    Default: anycompany-ivr-session-table
+    Description: Stack name for IVRSessionContext DynamoDB table
+
+Resources:
+  FulfillmentHookRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'anycompany-ivr-${Environment}-QinConnectHook-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      # ADDED: DynamoDB permission for cart lookup
+      Policies:
+        - PolicyName: DynamoDBSessionTableAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: DynamoDBReadAccess
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+                  - !Sub
+                    - '${TableArn}/index/*'
+                    - TableArn:
+                        Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableArn'
+
+  FulfillmentHookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/anycompany-ivr-${Environment}-QinConnectDialogHook'
+      RetentionInDays: 30
+
+  FulfillmentHookFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: FulfillmentHookLogGroup
+    Properties:
+      FunctionName: !Sub 'anycompany-ivr-${Environment}-QinConnectDialogHook'
+      Description: >
+        Fulfillment code hook for AmazonQinConnect intent.
+        Detects payment transfer signals and routes to payment flow.
+      Runtime: python3.12
+      # FIXED: Must match source file lambda_function.py
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt FulfillmentHookRole.Arn
+      Timeout: 10
+      MemorySize: 256
+      # ADDED: Required environment variables
+      Environment:
+        Variables:
+          SESSION_TABLE_NAME:
+            Fn::ImportValue: !Sub '${SessionTableStackName}-SessionTableName'
+          LOG_LEVEL: INFO
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return {'statusCode': 200, 'body': '{"message": "Deploy actual code"}'}
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Purpose
+          Value: FulfillmentCodeHook
+
+  FulfillmentHookLexPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref FulfillmentHookFunction
+      Action: lambda:InvokeFunction
+      Principal: lexv2.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  FulfillmentHookFunctionArn:
+    Description: ARN of QinConnect Fulfillment Code Hook Lambda
+    Value: !GetAtt FulfillmentHookFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-FulfillmentHookFunctionArn'
+  FulfillmentHookFunctionName:
+    Description: Name of QinConnect Fulfillment Code Hook Lambda
+    Value: !Ref FulfillmentHookFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-FulfillmentHookFunctionName'

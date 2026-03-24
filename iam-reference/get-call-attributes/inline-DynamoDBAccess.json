@@ -1,0 +1,20 @@
+{
+    "RoleName": "anycompany-ivr-dev-getCallAttributes-role",
+    "PolicyName": "DynamoDBAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:Query"
+                ],
+                "Resource": [
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-client-config-dev",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-client-config-dev/index/*"
+                ],
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

@@ -1,0 +1,1514 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "Get Call attributes",
+  "Metadata": {
+    "entryPointPosition": {
+      "x": -310.4,
+      "y": 300
+    },
+    "ActionMetadata": {
+      "Restore Session Lambda": {
+        "position": {
+          "x": 5199.2,
+          "y": 298.4
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LambdaFunctionARN": {
+            "displayName": "ivr-dev-SaveAndRestoreSession"
+          }
+        },
+        "dynamicMetadata": {
+          "operation": false,
+          "sessionId": false,
+          "currentContactId": false
+        }
+      },
+      "Restore Contact Attributes": {
+        "position": {
+          "x": 5498.4,
+          "y": 298.4
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Lex Error Message": {
+        "position": {
+          "x": 1600,
+          "y": 600
+        },
+        "isFriendlyName": true
+      },
+      "Resume Conversational AI": {
+        "position": {
+          "x": 5800,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LexV2Bot": {
+            "AliasArn": {
+              "useLexBotDropdown": true,
+              "lexV2BotName": "ParkAndTollBot"
+            }
+          }
+        },
+        "dynamicMetadata": {
+          "wisdomSessionId": false,
+          "currentContactId": false,
+          "clientName": false,
+          "violationAmounts": false,
+          "paymentAmount": false,
+          "paymentType": false,
+          "updatedViolations": false,
+          "resumeAfterPayment": false,
+          "clientType": false,
+          "violationIds": false,
+          "initialContactId": false,
+          "customerId": false,
+          "x-amz-lex:audio:start-timeout-ms:*:*": false,
+          "maxViolationsIVR": false,
+          "paymentStatus": false,
+          "x-amz-lex:audio:end-timeout-ms:*:*": false,
+          "paymentCompleted": false,
+          "clientId": false,
+          "availableTools": false,
+          "conversationSummary": false,
+          "lastIntent": false,
+          "sessionId": false,
+          "customerName": false,
+          "transactionId": false,
+          "isOpen": false,
+          "escalationQueue": false,
+          "connectContactId": false,
+          "greetingMessage": false,
+          "updateStatus": false,
+          "authMethod": false,
+          "last4Digits": false
+        },
+        "useLexBotDropdown": true,
+        "lexV2BotName": "ParkAndTollBot",
+        "conditionMetadata": []
+      },
+      "Pause Recording": {
+        "position": {
+          "x": 3400,
+          "y": 300
+        },
+        "isFriendlyName": true
+      },
+      "Play Payment Greeting": {
+        "position": {
+          "x": 3648.8,
+          "y": 297.6
+        },
+        "isFriendlyName": true
+      },
+      "Update Violation Balance": {
+        "position": {
+          "x": 4900,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LambdaFunctionARN": {
+            "displayName": "ivr-dev-UpdateViolationBalance"
+          }
+        },
+        "dynamicMetadata": {
+          "paymentStatus": false,
+          "transactionId": false,
+          "paymentAmount": false,
+          "violationIds": false,
+          "violationAmounts": false,
+          "paymentType": false,
+          "customerId": false,
+          "clientId": false,
+          "accountNumber": false,
+          "sessionId": false
+        }
+      },
+      "Save Payment Results": {
+        "position": {
+          "x": 4600,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Payment Bot Error": {
+        "position": {
+          "x": 4000,
+          "y": 600
+        },
+        "isFriendlyName": true
+      },
+      "Seed Payment Bot Session": {
+        "position": {
+          "x": 3879.2,
+          "y": 328
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LambdaFunctionARN": {
+            "displayName": "anycompany-ivr-seed-payment-session"
+          }
+        },
+        "dynamicMetadata": {}
+      },
+      "Resume Recording": {
+        "position": {
+          "x": 4300,
+          "y": 300
+        },
+        "isFriendlyName": true
+      },
+      "PCI Payment Bot": {
+        "position": {
+          "x": 4094.4,
+          "y": 305.6
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LexV2Bot": {
+            "AliasArn": {
+              "useLexBotDropdown": true,
+              "lexV2BotName": "PaymentCollectionBot"
+            }
+          }
+        },
+        "dynamicMetadata": {
+          "x-amz-lex:audio:end-timeout-ms:expirationDate:*": false,
+          "x-amz-lex:max-speech-duration-ms:expirationDate:*": false,
+          "currentContactId": false,
+          "x-amz-lex:max-speech-duration-ms:billingZip:*": false,
+          "clientId": false,
+          "x-amz-lex:audio:start-timeout-ms:cvv:*": false,
+          "x-amz-lex:max-speech-duration-ms:cardNumber:*": false,
+          "sessionId": false,
+          "accountNumber": false,
+          "paymentAmount": false,
+          "x-amz-lex:audio:end-timeout-ms:cardNumber:*": false,
+          "x-amz-lex:audio:start-timeout-ms:expirationDate:*": false,
+          "x-amz-lex:audio:end-timeout-ms:billingZip:*": false,
+          "paymentReason": false,
+          "paymentCartId": false,
+          "initialContactId": false,
+          "x-amz-lex:audio:start-timeout-ms:billingZip:*": false,
+          "customerId": false,
+          "x-amz-lex:audio:start-timeout-ms:cardNumber:*": false,
+          "x-amz-lex:audio:end-timeout-ms:cvv:*": false
+        },
+        "useLexBotDropdown": true,
+        "lexV2BotName": "PaymentCollectionBot",
+        "conditionMetadata": []
+      },
+      "Debug Capture Lex Session Post Payment": {
+        "position": {
+          "x": 6100.8,
+          "y": 299.2
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Sync Lex Attrs After Bot": {
+        "position": {
+          "x": 2200,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Sync Lex Attrs Post Payment": {
+        "position": {
+          "x": 6400,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Goodbye Message": {
+        "position": {
+          "x": 2500,
+          "y": 900
+        },
+        "isFriendlyName": true
+      },
+      "Payment Error Fallback": {
+        "position": {
+          "x": 3100,
+          "y": 900
+        },
+        "isFriendlyName": true
+      },
+      "Set Payment Context": {
+        "position": {
+          "x": 3100,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Check Tool Routing": {
+        "position": {
+          "x": 2499.2,
+          "y": 299.2
+        },
+        "isFriendlyName": true,
+        "conditions": [],
+        "conditionMetadata": [
+          {
+            "id": "0e1d0bd9-fff5-4865-af5b-5518cf578724",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "Escalate"
+          },
+          {
+            "id": "914f5507-16e9-4bf9-b22a-2cce9adb78ea",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "initiatePayment"
+          }
+        ]
+      },
+      "Check Tool Post Payment": {
+        "position": {
+          "x": 6699.2,
+          "y": 299.2
+        },
+        "isFriendlyName": true,
+        "conditions": [],
+        "conditionMetadata": [
+          {
+            "id": "57b4b493-43e3-4c92-8729-60d659fc336f",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "Escalate"
+          },
+          {
+            "id": "70b9c4ae-f84f-47ca-88e1-cb18dd4c7220",
+            "operator": {
+              "name": "Equals",
+              "value": "Equals",
+              "shortDisplay": "="
+            },
+            "value": "initiatePayment"
+          }
+        ]
+      },
+      "Save Session for Payment": {
+        "position": {
+          "x": 2800,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LambdaFunctionARN": {
+            "displayName": "ivr-dev-SaveAndRestoreSession"
+          }
+        },
+        "dynamicMetadata": {
+          "operation": false,
+          "conversationSummary": false,
+          "lastIntent": false,
+          "paymentAmount": false,
+          "paymentReason": false,
+          "paymentType": false,
+          "accountNumber": false,
+          "customerId": false,
+          "customerName": false,
+          "clientId": false,
+          "violationIds": false,
+          "violationAmounts": false,
+          "sessionId": false,
+          "initialContactId": false,
+          "currentContactId": false
+        }
+      },
+      "Set Escalation Attrs": {
+        "position": {
+          "x": 2500,
+          "y": 600
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Transfer To Queue": {
+        "position": {
+          "x": 3400,
+          "y": 600
+        },
+        "isFriendlyName": true
+      },
+      "Resume Recording Error": {
+        "position": {
+          "x": 4300,
+          "y": 600
+        },
+        "isFriendlyName": true
+      },
+      "Queue At Capacity Message": {
+        "position": {
+          "x": 3400,
+          "y": 900
+        },
+        "isFriendlyName": true
+      },
+      "Update Contact Event Hooks": {
+        "position": {
+          "x": 2800,
+          "y": 600
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "EventHooks": {
+            "DefaultAgentUI": {
+              "displayName": "Agent Screen Pop"
+            }
+          }
+        }
+      },
+      "Set Target Queue": {
+        "position": {
+          "x": 3100,
+          "y": 600
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "QueueId": {
+            "displayName": "BasicQueue"
+          }
+        },
+        "queue": {
+          "text": "BasicQueue"
+        }
+      },
+      "Disconnect": {
+        "position": {
+          "x": 3700,
+          "y": 900
+        },
+        "isFriendlyName": true
+      },
+      "Debug Flow Version Check": {
+        "position": {
+          "x": 100,
+          "y": 600
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Get Call attributes": {
+        "position": {
+          "x": 100,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LambdaFunctionARN": {
+            "displayName": "anycompany-ivr-dev-getCallAttributes"
+          }
+        },
+        "dynamicMetadata": {}
+      },
+      "Debug Capture Lex Session": {
+        "position": {
+          "x": 1900,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Set Initial Attributes": {
+        "position": {
+          "x": 400,
+          "y": 299.2
+        },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "Config Error Message": {
+        "position": {
+          "x": 400,
+          "y": 600
+        },
+        "isFriendlyName": true
+      },
+      "Basic configurations": {
+        "position": {
+          "x": 700,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "FlowModuleId": {
+            "displayName": "Basic setting configurations",
+            "Alias": {
+              "displayName": "$LATEST"
+            }
+          }
+        },
+        "contactFlowModuleName": "Basic setting configurations"
+      },
+      "Voice Error Message": {
+        "position": {
+          "x": 1300,
+          "y": 600
+        },
+        "isFriendlyName": true
+      },
+      "Conversational AI": {
+        "position": {
+          "x": 1598.4,
+          "y": 297.6
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LexV2Bot": {
+            "AliasArn": {
+              "displayName": "live",
+              "useLexBotDropdown": true,
+              "lexV2BotName": "ParkAndTollBot"
+            }
+          }
+        },
+        "dynamicMetadata": {
+          "wisdomSessionId": false,
+          "currentContactId": false,
+          "clientId": false,
+          "availableTools": false,
+          "clientName": false,
+          "connectSessionId": false,
+          "sessionId": false,
+          "clientType": false,
+          "isOpen": false,
+          "escalationQueue": false,
+          "initialContactId": false,
+          "connectContactId": false,
+          "greetingMessage": false,
+          "x-amz-lex:audio:start-timeout-ms:*:*": false,
+          "authMethod": false,
+          "maxViolationsIVR": false,
+          "x-amz-lex:audio:end-timeout-ms:*:*": false
+        },
+        "useLexBotDropdown": true,
+        "lexV2BotName": "ParkAndTollBot",
+        "lexV2BotAliasName": "live",
+        "conditionMetadata": []
+      },
+      "Update Connect session data Lambda": {
+        "position": {
+          "x": 1000,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LambdaFunctionARN": {
+            "displayName": "ConnectAssistantUpdateSessionDataNew"
+          }
+        },
+        "dynamicMetadata": {
+          "clientId": false,
+          "clientName": false,
+          "clientType": false,
+          "availableTools": false,
+          "authMethod": false,
+          "isOpen": false,
+          "maxViolationsIVR": false,
+          "escalationQueue": false,
+          "greetingMessage": false,
+          "dbg_contactId": false,
+          "connectContactId": false,
+          "connectInitialId": false,
+          "sessionId": false
+        }
+      },
+      "Set TTS Voice": {
+        "position": {
+          "x": 1300,
+          "y": 300
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "TextToSpeechVoice": {
+            "languageCode": "en-US"
+          }
+        },
+        "overrideConsoleVoice": true
+      }
+    },
+    "Annotations": [],
+    "name": "Main Flow",
+    "description": "",
+    "type": "contactFlow",
+    "status": "PUBLISHED",
+    "hash": {}
+  },
+  "Actions": [
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "arn:aws:lambda:us-east-1:123456789012:function:ivr-dev-SaveAndRestoreSession",
+        "InvocationTimeLimitSeconds": "5",
+        "InvocationType": "SYNCHRONOUS",
+        "LambdaInvocationAttributes": {
+          "operation": "RESTORE",
+          "sessionId": "$.Attributes.sessionId",
+          "currentContactId": "$.ContactId"
+        },
+        "ResponseValidation": {
+          "ResponseType": "STRING_MAP"
+        }
+      },
+      "Identifier": "Restore Session Lambda",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
+        "NextAction": "Restore Contact Attributes",
+        "Errors": [
+          {
+            "NextAction": "Restore Contact Attributes",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "clientId": "$.External.clientId",
+          "clientName": "$.External.clientName",
+          "clientType": "$.External.clientType",
+          "availableTools": "$.External.availableTools",
+          "authMethod": "$.External.authMethod",
+          "isOpen": "$.External.isOpen",
+          "maxViolationsIVR": "$.External.maxViolationsIVR",
+          "escalationQueue": "$.External.escalationQueue",
+          "greetingMessage": "$.External.greetingMessage",
+          "customerId": "$.External.customerId",
+          "customerName": "$.External.customerName",
+          "paymentStatus": "$.Attributes.paymentStatus",
+          "transactionId": "$.Attributes.transactionId",
+          "last4Digits": "$.Attributes.last4Digits",
+          "paymentAmount": "$.Attributes.paymentAmount",
+          "paymentCompleted": "$.External.paymentCompleted",
+          "violationIds": "$.External.violationIds",
+          "violationAmounts": "$.External.violationAmounts",
+          "paymentType": "$.External.paymentType",
+          "updateStatus": "$.External.updateStatus",
+          "updatedViolations": "$.External.updatedViolations",
+          "conversationSummary": "$.External.conversationSummary",
+          "lastIntent": "$.External.lastIntent",
+          "sessionId": "$.Attributes.initialContactId",
+          "initialContactId": "$.Attributes.initialContactId",
+          "routeToPayment": "false",
+          "currentContactId": "$.ContactId"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Restore Contact Attributes",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Resume Conversational AI",
+        "Errors": [
+          {
+            "NextAction": "Resume Conversational AI",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "We are sorry, we encountered a technical issue with our assistant. Please try again later."
+      },
+      "Identifier": "Lex Error Message",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Disconnect",
+        "Errors": [
+          {
+            "NextAction": "Disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "You are now back with our assistant.",
+        "LexV2Bot": {
+          "AliasArn": "arn:aws:lex:us-east-1:123456789012:bot-alias/PARK_BOT_ID_PLACEHOLDER/PARK_BOT_ALIAS_PLACEHOLDER"
+        },
+        "LexSessionAttributes": {
+          "wisdomSessionId": "$.Attributes.wisdomSessionId",
+          "currentContactId": "$.ContactId",
+          "clientName": "$.Attributes.clientName",
+          "violationAmounts": "$.Attributes.violationAmounts",
+          "paymentAmount": "$.Attributes.paymentAmount",
+          "paymentType": "$.Attributes.paymentType",
+          "updatedViolations": "$.Attributes.updatedViolations",
+          "resumeAfterPayment": "true",
+          "clientType": "$.Attributes.clientType",
+          "violationIds": "$.Attributes.violationIds",
+          "initialContactId": "$.Attributes.initialContactId",
+          "customerId": "$.Attributes.customerId",
+          "x-amz-lex:audio:start-timeout-ms:*:*": "4000",
+          "maxViolationsIVR": "$.Attributes.maxViolationsIVR",
+          "paymentStatus": "$.Attributes.paymentStatus",
+          "x-amz-lex:audio:end-timeout-ms:*:*": "1000",
+          "paymentCompleted": "$.Attributes.paymentCompleted",
+          "clientId": "$.Attributes.clientId",
+          "availableTools": "$.Attributes.availableTools",
+          "conversationSummary": "$.Attributes.conversationSummary",
+          "lastIntent": "$.Attributes.lastIntent",
+          "sessionId": "$.Attributes.sessionId",
+          "customerName": "$.Attributes.customerName",
+          "transactionId": "$.Attributes.transactionId",
+          "isOpen": "$.Attributes.isOpen",
+          "escalationQueue": "$.Attributes.escalationQueue",
+          "connectContactId": "$.ContactId",
+          "greetingMessage": "$.Attributes.greetingMessage",
+          "updateStatus": "$.Attributes.updateStatus",
+          "authMethod": "$.Attributes.authMethod",
+          "last4Digits": "$.Attributes.last4Digits"
+        }
+      },
+      "Identifier": "Resume Conversational AI",
+      "Type": "ConnectParticipantWithLexBot",
+      "Transitions": {
+        "NextAction": "Debug Capture Lex Session Post Payment",
+        "Errors": [
+          {
+            "NextAction": "Debug Capture Lex Session Post Payment",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "Debug Capture Lex Session Post Payment",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "RecordingBehavior": {
+          "RecordedParticipants": [],
+          "IVRRecordingBehavior": "Disabled"
+        }
+      },
+      "Identifier": "Pause Recording",
+      "Type": "UpdateContactRecordingBehavior",
+      "Transitions": {
+        "NextAction": "Play Payment Greeting"
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "You are now connected to our secure payment system. Your payment amount is $.Attributes.paymentAmount. Please have your card ready."
+      },
+      "Identifier": "Play Payment Greeting",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Seed Payment Bot Session",
+        "Errors": [
+          {
+            "NextAction": "Seed Payment Bot Session",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "arn:aws:lambda:us-east-1:123456789012:function:ivr-dev-UpdateViolationBalance",
+        "InvocationTimeLimitSeconds": "8",
+        "InvocationType": "SYNCHRONOUS",
+        "LambdaInvocationAttributes": {
+          "paymentStatus": "$.Attributes.paymentStatus",
+          "transactionId": "$.Attributes.transactionId",
+          "paymentAmount": "$.Attributes.paymentAmount",
+          "violationIds": "$.Attributes.violationIds",
+          "violationAmounts": "$.Attributes.violationAmounts",
+          "paymentType": "$.Attributes.paymentType",
+          "customerId": "$.Attributes.customerId",
+          "clientId": "$.Attributes.clientId",
+          "accountNumber": "$.Attributes.accountNumber",
+          "sessionId": "$.Attributes.initialContactId"
+        },
+        "ResponseValidation": {
+          "ResponseType": "STRING_MAP"
+        }
+      },
+      "Identifier": "Update Violation Balance",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
+        "NextAction": "Restore Session Lambda",
+        "Errors": [
+          {
+            "NextAction": "Restore Session Lambda",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "paymentStatus": "$.Lex.SessionAttributes.paymentStatus",
+          "transactionId": "$.Lex.SessionAttributes.transactionId",
+          "last4Digits": "$.Lex.SessionAttributes.last4Digits",
+          "paymentAmount": "$.Lex.SessionAttributes.paymentAmount",
+          "paymentPhase": "COMPLETED",
+          "sessionId": "$.Attributes.initialContactId"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Save Payment Results",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Update Violation Balance",
+        "Errors": [
+          {
+            "NextAction": "Update Violation Balance",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "We encountered an error during payment processing. Transferring you to an agent."
+      },
+      "Identifier": "Payment Bot Error",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Resume Recording Error",
+        "Errors": [
+          {
+            "NextAction": "Resume Recording Error",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "arn:aws:lambda:us-east-1:123456789012:function:ivr-dev-SeedPaymentSession",
+        "InvocationTimeLimitSeconds": "3",
+        "InvocationType": "SYNCHRONOUS",
+        "ResponseValidation": {
+          "ResponseType": "STRING_MAP"
+        }
+      },
+      "Identifier": "Seed Payment Bot Session",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
+        "NextAction": "PCI Payment Bot",
+        "Errors": [
+          {
+            "NextAction": "PCI Payment Bot",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "RecordingBehavior": {
+          "RecordedParticipants": [
+            "Customer"
+          ],
+          "IVRRecordingBehavior": "Disabled"
+        }
+      },
+      "Identifier": "Resume Recording",
+      "Type": "UpdateContactRecordingBehavior",
+      "Transitions": {
+        "NextAction": "Save Payment Results"
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "\"\"",
+        "LexV2Bot": {
+          "AliasArn": "arn:aws:lex:us-east-1:123456789012:bot-alias/PAY_BOT_ID_PLACEHOLDER/PAY_BOT_ALIAS_PLACEHOLDER"
+        },
+        "LexSessionAttributes": {
+          "x-amz-lex:audio:end-timeout-ms:expirationDate:*": "3000",
+          "x-amz-lex:max-speech-duration-ms:expirationDate:*": "8000",
+          "currentContactId": "$.ContactId",
+          "x-amz-lex:max-speech-duration-ms:billingZip:*": "6000",
+          "clientId": "$.Attributes.clientId",
+          "x-amz-lex:audio:start-timeout-ms:cvv:*": "8000",
+          "x-amz-lex:max-speech-duration-ms:cardNumber:*": "15000",
+          "sessionId": "$.Attributes.initialContactId",
+          "accountNumber": "$.Attributes.accountNumber",
+          "paymentAmount": "$.Attributes.paymentAmount",
+          "x-amz-lex:audio:end-timeout-ms:cardNumber:*": "3000",
+          "x-amz-lex:audio:start-timeout-ms:expirationDate:*": "8000",
+          "x-amz-lex:audio:end-timeout-ms:billingZip:*": "3000",
+          "paymentReason": "$.Attributes.paymentReason",
+          "paymentCartId": "$.Attributes.paymentCartId",
+          "initialContactId": "$.Attributes.initialContactId",
+          "x-amz-lex:audio:start-timeout-ms:billingZip:*": "8000",
+          "customerId": "$.Attributes.customerId",
+          "x-amz-lex:audio:start-timeout-ms:cardNumber:*": "8000",
+          "x-amz-lex:audio:end-timeout-ms:cvv:*": "3000"
+        }
+      },
+      "Identifier": "PCI Payment Bot",
+      "Type": "ConnectParticipantWithLexBot",
+      "Transitions": {
+        "NextAction": "Payment Bot Error",
+        "Errors": [
+          {
+            "NextAction": "Resume Recording",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "Payment Bot Error",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "dbg_Tool_post": "$.Lex.SessionAttributes.Tool",
+          "dbg_routeToPayment_post": "$.Lex.SessionAttributes.routeToPayment",
+          "dbg_cartId_post": "$.Lex.SessionAttributes.cartId",
+          "dbg_paymentAmount_post": "$.Lex.SessionAttributes.paymentAmount",
+          "dbg_paymentConfirmed_post": "$.Lex.SessionAttributes.paymentConfirmed",
+          "dbg_initialContactId_lex_post": "$.Lex.SessionAttributes.initialContactId",
+          "dbg_sessionId_lex_post": "$.Lex.SessionAttributes.sessionId",
+          "dbg_connect_contactId_post": "$.ContactId",
+          "dbg_connect_initialId_post": "$.InitialContactId",
+          "dbg_attr_initialId_post": "$.Attributes.initialContactId",
+          "dbg_timestamp_post": "POST_PAYMENT_CHECK",
+          "dbg_attr_sessionId": "$.Attributes.sessionId",
+          "dbg_lex_sessionId": "$.Lex.SessionAttributes.sessionId",
+          "dbg_wisdomId": "$.Attributes.wisdomSessionId",
+          "dbg_sessionId_written": "$.Attributes.sessionIdWritten"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Debug Capture Lex Session Post Payment",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Sync Lex Attrs Post Payment",
+        "Errors": [
+          {
+            "NextAction": "Sync Lex Attrs Post Payment",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "Tool": "$.Lex.SessionAttributes.Tool",
+          "routeToPayment": "$.Lex.SessionAttributes.routeToPayment",
+          "paymentCartId": "$.Lex.SessionAttributes.cartId",
+          "paymentAmount": "$.Lex.SessionAttributes.paymentAmount",
+          "clientId": "$.Lex.SessionAttributes.clientId",
+          "dbg_tool_sync": "$.Lex.SessionAttributes.Tool",
+          "dbg_rtp_sync": "$.Lex.SessionAttributes.routeToPayment",
+          "dbg_cartId_sync": "$.Lex.SessionAttributes.cartId",
+          "dbg_amt_sync": "$.Lex.SessionAttributes.paymentAmount",
+          "escalationReason": "$.Lex.SessionAttributes.escalationReason",
+          "customerId": "$.Lex.SessionAttributes.customerId",
+          "customerName": "$.Lex.SessionAttributes.customerName",
+          "accountNumber": "$.Lex.SessionAttributes.accountNumber",
+          "conversationSummary": "$.Lex.SessionAttributes.conversationSummary",
+          "lastIntent": "$.Lex.SessionAttributes.lastIntent"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Sync Lex Attrs After Bot",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Check Tool Routing",
+        "Errors": [
+          {
+            "NextAction": "Check Tool Routing",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "Tool": "$.Lex.SessionAttributes.Tool",
+          "routeToPayment": "$.Lex.SessionAttributes.routeToPayment",
+          "paymentCartId": "$.Lex.SessionAttributes.cartId",
+          "paymentAmount": "$.Lex.SessionAttributes.paymentAmount",
+          "dbg_tool_post_sync": "$.Lex.SessionAttributes.Tool",
+          "dbg_rtp_post_sync": "$.Lex.SessionAttributes.routeToPayment",
+          "dbg_cart_post_sync": "$.Lex.SessionAttributes.cartId",
+          "dbg_amt_post_sync": "$.Lex.SessionAttributes.paymentAmount",
+          "escalationReason": "$.Lex.SessionAttributes.escalationReason"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Sync Lex Attrs Post Payment",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Check Tool Post Payment",
+        "Errors": [
+          {
+            "NextAction": "Check Tool Post Payment",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "Thank you for calling. Goodbye."
+      },
+      "Identifier": "Goodbye Message",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Disconnect",
+        "Errors": [
+          {
+            "NextAction": "Disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "We encountered an issue with payment processing. Please call back or speak with an agent."
+      },
+      "Identifier": "Payment Error Fallback",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Resume Recording Error",
+        "Errors": [
+          {
+            "NextAction": "Resume Recording Error",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "paymentAmount": "$.Lex.SessionAttributes.paymentAmount",
+          "accountNumber": "$.Lex.SessionAttributes.accountNumber",
+          "paymentReason": "$.Lex.SessionAttributes.paymentReason",
+          "paymentType": "$.Lex.SessionAttributes.paymentType",
+          "customerId": "$.Lex.SessionAttributes.customerId",
+          "clientId": "$.Lex.SessionAttributes.clientId",
+          "violationIds": "$.Lex.SessionAttributes.violationIds",
+          "violationAmounts": "$.Lex.SessionAttributes.violationAmounts",
+          "paymentCartId": "$.Lex.SessionAttributes.cartId",
+          "paymentPhase": "IN_PROGRESS",
+          "sessionId": "$.Attributes.initialContactId",
+          "routeToPayment": "false",
+          "currentContactId": "$.ContactId"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Set Payment Context",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Pause Recording",
+        "Errors": [
+          {
+            "NextAction": "Payment Error Fallback",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ComparisonValue": "$.Attributes.Tool"
+      },
+      "Identifier": "Check Tool Routing",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "Goodbye Message",
+        "Conditions": [
+          {
+            "NextAction": "Set Escalation Attrs",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "Escalate"
+              ]
+            }
+          },
+          {
+            "NextAction": "Save Session for Payment",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "initiatePayment"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "Goodbye Message",
+            "ErrorType": "NoMatchingCondition"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "ComparisonValue": "$.Attributes.Tool"
+      },
+      "Identifier": "Check Tool Post Payment",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "Goodbye Message",
+        "Conditions": [
+          {
+            "NextAction": "Set Escalation Attrs",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "Escalate"
+              ]
+            }
+          },
+          {
+            "NextAction": "Save Session for Payment",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "initiatePayment"
+              ]
+            }
+          }
+        ],
+        "Errors": [
+          {
+            "NextAction": "Goodbye Message",
+            "ErrorType": "NoMatchingCondition"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "arn:aws:lambda:us-east-1:123456789012:function:ivr-dev-SaveAndRestoreSession",
+        "InvocationTimeLimitSeconds": "5",
+        "InvocationType": "SYNCHRONOUS",
+        "LambdaInvocationAttributes": {
+          "operation": "SAVE",
+          "conversationSummary": "$.Lex.SessionAttributes.conversationSummary",
+          "lastIntent": "$.Lex.SessionAttributes.lastIntent",
+          "paymentAmount": "$.Lex.SessionAttributes.paymentAmount",
+          "paymentReason": "$.Lex.SessionAttributes.paymentReason",
+          "paymentType": "$.Lex.SessionAttributes.paymentType",
+          "accountNumber": "$.Lex.SessionAttributes.accountNumber",
+          "customerId": "$.Lex.SessionAttributes.customerId",
+          "customerName": "$.Lex.SessionAttributes.customerName",
+          "clientId": "$.Lex.SessionAttributes.clientId",
+          "violationIds": "$.Lex.SessionAttributes.violationIds",
+          "violationAmounts": "$.Lex.SessionAttributes.violationAmounts",
+          "sessionId": "$.Attributes.initialContactId",
+          "initialContactId": "$.Attributes.initialContactId",
+          "currentContactId": "$.ContactId"
+        },
+        "ResponseValidation": {
+          "ResponseType": "STRING_MAP"
+        }
+      },
+      "Identifier": "Save Session for Payment",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
+        "NextAction": "Set Payment Context",
+        "Errors": [
+          {
+            "NextAction": "Payment Error Fallback",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "escalationReason": "$.Lex.SessionAttributes.escalationReason",
+          "escalationSummary": "$.Lex.SessionAttributes.escalationSummary",
+          "customerIntent": "$.Lex.SessionAttributes.customerIntent",
+          "sentiment": "$.Lex.SessionAttributes.sentiment"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Set Escalation Attrs",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Update Contact Event Hooks",
+        "Errors": [
+          {
+            "NextAction": "Update Contact Event Hooks",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "Transfer To Queue",
+      "Type": "TransferContactToQueue",
+      "Transitions": {
+        "NextAction": "Queue At Capacity Message",
+        "Errors": [
+          {
+            "NextAction": "Queue At Capacity Message",
+            "ErrorType": "QueueAtCapacity"
+          },
+          {
+            "NextAction": "Queue At Capacity Message",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "RecordingBehavior": {
+          "RecordedParticipants": [
+            "Customer"
+          ],
+          "IVRRecordingBehavior": "Disabled"
+        }
+      },
+      "Identifier": "Resume Recording Error",
+      "Type": "UpdateContactRecordingBehavior",
+      "Transitions": {
+        "NextAction": "Set Target Queue"
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "We are sorry, all agents are currently busy. Please call back later."
+      },
+      "Identifier": "Queue At Capacity Message",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Disconnect",
+        "Errors": [
+          {
+            "NextAction": "Disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "EventHooks": {
+          "DefaultAgentUI": "arn:aws:connect:us-east-1:123456789012:instance/CONNECT_INSTANCE_ID_PLACEHOLDER/contact-flow/d382fb17-60c9-4ab1-9440-70acee55a209"
+        }
+      },
+      "Identifier": "Update Contact Event Hooks",
+      "Type": "UpdateContactEventHooks",
+      "Transitions": {
+        "NextAction": "Set Target Queue",
+        "Errors": [
+          {
+            "NextAction": "Set Target Queue",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "QueueId": "arn:aws:connect:us-east-1:123456789012:instance/CONNECT_INSTANCE_ID_PLACEHOLDER/queue/67fda863-fb3a-4b74-b76a-a77274be9217"
+      },
+      "Identifier": "Set Target Queue",
+      "Type": "UpdateContactTargetQueue",
+      "Transitions": {
+        "NextAction": "Transfer To Queue",
+        "Errors": [
+          {
+            "NextAction": "Queue At Capacity Message",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "Disconnect",
+      "Type": "DisconnectParticipant",
+      "Transitions": {}
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "dbg_flow_version": "v10-routing-fix-2025",
+          "dbg_initial_contact": "$.InitialContactId",
+          "dbg_current_contact": "$.ContactId",
+          "dbg_flow_start": "FLOW_STARTED"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Debug Flow Version Check",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Set Initial Attributes",
+        "Errors": [
+          {
+            "NextAction": "Set Initial Attributes",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "arn:aws:lambda:us-east-1:123456789012:function:anycompany-ivr-dev-getCallAttributes",
+        "InvocationTimeLimitSeconds": "8",
+        "InvocationType": "SYNCHRONOUS",
+        "ResponseValidation": {
+          "ResponseType": "JSON"
+        }
+      },
+      "Identifier": "Get Call attributes",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
+        "NextAction": "Debug Flow Version Check",
+        "Errors": [
+          {
+            "NextAction": "Config Error Message",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "dbg_Tool": "$.Lex.SessionAttributes.Tool",
+          "dbg_routeToPayment": "$.Lex.SessionAttributes.routeToPayment",
+          "dbg_cartId": "$.Lex.SessionAttributes.cartId",
+          "dbg_paymentAmount": "$.Lex.SessionAttributes.paymentAmount",
+          "dbg_paymentConfirmed": "$.Lex.SessionAttributes.paymentConfirmed",
+          "dbg_initialContactId_lex": "$.Lex.SessionAttributes.initialContactId",
+          "dbg_sessionId_lex": "$.Lex.SessionAttributes.sessionId",
+          "dbg_connect_contactId": "$.ContactId",
+          "dbg_connect_initialId": "$.InitialContactId",
+          "dbg_attr_initialId": "$.Attributes.initialContactId",
+          "dbg_timestamp": "PRE_PAYMENT_CHECK",
+          "dbg_attr_sessionId": "$.Attributes.sessionId",
+          "dbg_sessionId_match": "$.Lex.SessionAttributes.sessionId"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Debug Capture Lex Session",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Sync Lex Attrs After Bot",
+        "Errors": [
+          {
+            "NextAction": "Sync Lex Attrs After Bot",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": {
+          "clientId": "$.External.clientId",
+          "clientName": "$.External.clientName",
+          "clientType": "$.External.clientType",
+          "isOpen": "$.External.isOpen",
+          "escalationQueue": "$.External.escalationQueue",
+          "authMethod": "$.External.authMethod",
+          "greetingMessage": "$.External.greetingMessage",
+          "availableTools": "$.External.availableTools",
+          "maxViolationsIVR": "$.External.maxViolationsIVR",
+          "initialContactId": "$.InitialContactId",
+          "currentContactId": "$.ContactId",
+          "sessionId": "$.InitialContactId",
+          "routeToPayment": "false"
+        },
+        "TargetContact": "Current"
+      },
+      "Identifier": "Set Initial Attributes",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "Basic configurations",
+        "Errors": [
+          {
+            "NextAction": "Config Error Message",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "We are sorry, we could not load your account settings. Please try again later."
+      },
+      "Identifier": "Config Error Message",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Disconnect",
+        "Errors": [
+          {
+            "NextAction": "Disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "FlowModuleId": "arn:aws:connect:us-east-1:123456789012:instance/CONNECT_INSTANCE_ID_PLACEHOLDER/flow-module/a8d519cf-0591-492b-ae87-674443033232:$LATEST"
+      },
+      "Identifier": "Basic configurations",
+      "Type": "InvokeFlowModule",
+      "Transitions": {
+        "NextAction": "Update Connect session data Lambda",
+        "Errors": [
+          {
+            "NextAction": "Update Connect session data Lambda",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "Config Error Message",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "We are sorry, we encountered a technical issue with the voice system. Please try again later."
+      },
+      "Identifier": "Voice Error Message",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "Disconnect",
+        "Errors": [
+          {
+            "NextAction": "Disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "$.Attributes.greetingMessage",
+        "LexV2Bot": {
+          "AliasArn": "arn:aws:lex:us-east-1:123456789012:bot-alias/PARK_BOT_ID_PLACEHOLDER/PARK_BOT_ALIAS_PLACEHOLDER"
+        },
+        "LexSessionAttributes": {
+          "wisdomSessionId": "$.Attributes.wisdomSessionId",
+          "currentContactId": "$.ContactId",
+          "clientId": "$.Attributes.clientId",
+          "availableTools": "$.Attributes.availableTools",
+          "clientName": "$.Attributes.clientName",
+          "connectSessionId": "$.Attributes.sessionId",
+          "sessionId": "$.Attributes.sessionId",
+          "clientType": "$.Attributes.clientType",
+          "isOpen": "$.Attributes.isOpen",
+          "escalationQueue": "$.Attributes.escalationQueue",
+          "initialContactId": "$.Attributes.initialContactId",
+          "connectContactId": "$.ContactId",
+          "greetingMessage": "$.Attributes.greetingMessage",
+          "x-amz-lex:audio:start-timeout-ms:*:*": "4000",
+          "authMethod": "$.Attributes.authMethod",
+          "maxViolationsIVR": "$.Attributes.maxViolationsIVR",
+          "x-amz-lex:audio:end-timeout-ms:*:*": "1000"
+        }
+      },
+      "Identifier": "Conversational AI",
+      "Type": "ConnectParticipantWithLexBot",
+      "Transitions": {
+        "NextAction": "Debug Capture Lex Session",
+        "Errors": [
+          {
+            "NextAction": "Debug Capture Lex Session",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "Debug Capture Lex Session",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "arn:aws:lambda:us-east-1:123456789012:function:ConnectAssistantUpdateSessionDataNew",
+        "InvocationTimeLimitSeconds": "5",
+        "InvocationType": "SYNCHRONOUS",
+        "LambdaInvocationAttributes": {
+          "clientId": "$.Attributes.clientId",
+          "clientName": "$.Attributes.clientName",
+          "clientType": "$.Attributes.clientType",
+          "availableTools": "$.Attributes.availableTools",
+          "authMethod": "$.Attributes.authMethod",
+          "isOpen": "$.Attributes.isOpen",
+          "maxViolationsIVR": "$.Attributes.maxViolationsIVR",
+          "escalationQueue": "$.Attributes.escalationQueue",
+          "greetingMessage": "$.Attributes.greetingMessage",
+          "dbg_contactId": "$.ContactId",
+          "connectContactId": "$.ContactId",
+          "connectInitialId": "$.InitialContactId",
+          "sessionId": "$.Attributes.sessionId"
+        },
+        "ResponseValidation": {
+          "ResponseType": "STRING_MAP"
+        }
+      },
+      "Identifier": "Update Connect session data Lambda",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
+        "NextAction": "Set TTS Voice",
+        "Errors": [
+          {
+            "NextAction": "Set TTS Voice",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "TextToSpeechVoice": "Matthew",
+        "TextToSpeechEngine": "Neural",
+        "TextToSpeechStyle": "Conversational"
+      },
+      "Identifier": "Set TTS Voice",
+      "Type": "UpdateContactTextToSpeechVoice",
+      "Transitions": {
+        "NextAction": "Conversational AI",
+        "Errors": [
+          {
+            "NextAction": "Voice Error Message",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    }
+  ]
+}

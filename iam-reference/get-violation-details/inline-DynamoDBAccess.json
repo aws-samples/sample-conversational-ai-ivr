@@ -1,0 +1,28 @@
+{
+    "RoleName": "anycompany-ivr-lambda-role-dev",
+    "PolicyName": "DynamoDBAccess",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan"
+                ],
+                "Resource": [
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-customers-dev",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-customers-dev/index/*",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-violations-dev",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-violations-dev/index/*",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-disputes-dev",
+                    "arn:aws:dynamodb:us-east-1:123456789012:table/anycompany-ivr-disputes-dev/index/*"
+                ],
+                "Effect": "Allow"
+            }
+        ]
+    }
+}

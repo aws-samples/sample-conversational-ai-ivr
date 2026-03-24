@@ -1,0 +1,14 @@
+{
+    "RoleName": "anycompany-ivr-update-session-LambdaExecutionRole-1Xf5ga47E9hJ",
+    "PolicyName": "ConnectDescribeContactPolicy",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": "connect:DescribeContact",
+                "Resource": "arn:aws:connect:us-east-1:123456789012:instance/CONNECT_INSTANCE_ID_PLACEHOLDER/contact/*",
+                "Effect": "Allow"
+            }
+        ]
+    }
+}
