@@ -1,6 +1,9 @@
 import json
 import os
 import logging
+import re
+import urllib.request
+import urllib.parse
 import boto3
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -21,6 +24,93 @@ CUSTOMERS_TABLE = os.environ.get(
 )
 
 _api_key = None
+
+# ---------------------------------------------------------------------------
+# URL validation – remediates Bandit B310 / CWE-22 (SSRF / path traversal)
+# ---------------------------------------------------------------------------
+ALLOWED_URL_SCHEMES = ('https',)
+_ALLOWED_API_HOSTS = None
+
+
+def _get_allowed_api_hosts():
+    """
+    Return the set of hostnames that this Lambda is permitted to call.
+    Derived from the VIOLATION_API_URL environment variable.
+    """
+    global _ALLOWED_API_HOSTS
+    if _ALLOWED_API_HOSTS is None:
+        api_url = os.environ.get('VIOLATION_API_URL', '')
+        hosts = set()
+        if api_url and api_url != 'MOCK_MODE':
+            parsed = urllib.parse.urlparse(api_url)
+            if parsed.hostname:
+                hosts.add(parsed.hostname.lower())
+        _ALLOWED_API_HOSTS = hosts
+        logger.debug(f"Allowed API hosts initialised: {_ALLOWED_API_HOSTS}")
+    return _ALLOWED_API_HOSTS
+
+
+def validate_url(url):
+    """
+    Validate a URL before opening it.
+
+    Ensures:
+      1. Scheme is HTTPS only (blocks file://, ftp://, gopher://, etc.)
+      2. Host is in the allow-list derived from VIOLATION_API_URL
+      3. No embedded credentials (user:pass@host)
+      4. No path-traversal sequences (..)
+
+    Raises ValueError on any violation.
+
+    Remediates: Bandit B310, CWE-22
+    """
+    parsed = urllib.parse.urlparse(url)
+
+    # 1. Enforce HTTPS only
+    if parsed.scheme not in ALLOWED_URL_SCHEMES:
+        raise ValueError(
+            f"Blocked URL scheme '{parsed.scheme}'. "
+            f"Allowed: {ALLOWED_URL_SCHEMES}"
+        )
+
+    # 2. Enforce allow-listed hosts
+    hostname = (parsed.hostname or '').lower()
+    allowed = _get_allowed_api_hosts()
+    if not allowed:
+        raise ValueError(
+            "No allowed API hosts configured. "
+            "Set VIOLATION_API_URL environment variable."
+        )
+    if hostname not in allowed:
+        raise ValueError(
+            f"Host '{hostname}' not in allowed hosts: {allowed}"
+        )
+
+    # 3. Reject embedded credentials
+    if parsed.username or parsed.password:
+        raise ValueError("URL must not contain embedded credentials")
+
+    # 4. Reject path traversal
+    if '..' in parsed.path:
+        raise ValueError("URL path must not contain '..'")
+
+    return url
+
+
+def sanitize_path_segment(value):
+    """
+    Sanitise a value used in a URL path segment.
+    Allows only alphanumeric characters, hyphens, and underscores.
+    Raises ValueError if the input contains illegal characters.
+
+    Prevents path traversal (e.g. '../../etc/passwd') and injection.
+    """
+    if not re.match(r'^[a-zA-Z0-9_-]+$', value):
+        raise ValueError(
+            f"Invalid path segment: '{value}'. "
+            f"Only alphanumeric, hyphens, and underscores allowed."
+        )
+    return value
 
 
 def get_api_key():
@@ -62,7 +152,7 @@ def lambda_handler(event, context):
         payment_amount        = parameters.get('paymentAmount', '0')
         violation_ids_str     = parameters.get('violationIds', '')
         violation_amounts_str = parameters.get('violationAmounts', '')
-        payment_type          = parameters.get('paymentType', 'FULL')  # ◄── CHANGED: default from FULL_BALANCE to FULL
+        payment_type          = parameters.get('paymentType', 'FULL')
         customer_id           = parameters.get('customerId', '')
         client_id             = parameters.get('clientId', '')
         account_number        = parameters.get('accountNumber', '')
@@ -103,7 +193,7 @@ def lambda_handler(event, context):
         )
 
         # ──────────────────────────────────────────────────────────
-        # ◄── CHANGED: Full rewrite of payment routing logic
+        # Payment routing logic
         #
         # Determine if this is a partial payment using three layers:
         #   1. Explicit paymentType value (new: PARTIAL, old: PARTIAL_AMOUNT)
@@ -169,7 +259,7 @@ def lambda_handler(event, context):
             f"totalViolationBalance={total_violation_balance}"
         )
         # ──────────────────────────────────────────────────────────
-        # ◄── END OF CHANGED ROUTING BLOCK
+        # END OF PAYMENT ROUTING BLOCK
         # ──────────────────────────────────────────────────────────
 
         api_url = os.environ.get('VIOLATION_API_URL', 'MOCK_MODE')
@@ -271,7 +361,10 @@ def update_violation(
     customer_id, client_id, account_number, use_dynamodb, api_url, api_key
 ):
     """Update a single violation record."""
-    logger.info(f"Updating violation {violation_id}: amount={amount_paid}, status={payment_status}")
+    logger.info(
+        f"Updating violation {violation_id}: "
+        f"amount={amount_paid}, status={payment_status}"
+    )
 
     if use_dynamodb:
         return update_violation_dynamodb(
@@ -284,30 +377,54 @@ def update_violation(
             account_number=account_number
         )
 
-    # Production API path (future)
-    import urllib.request
+    # ── Production API path (future) ─────────────────────────
+    # Security: Bandit B310 / CWE-22 remediated via validate_url()
+    # and sanitize_path_segment() before any network call.
+    # ──────────────────────────────────────────────────────────
     try:
+        # Sanitise violation_id: allow only alphanumeric, hyphens, underscores
+        safe_violation_id = sanitize_path_segment(violation_id)
+
+        target_url = f"{api_url}/violations/{safe_violation_id}/payment"
+
+        # Validate full URL before opening (remediates Bandit B310 / CWE-22)
+        validate_url(target_url)
+
         payload = json.dumps({
-            'violationId': violation_id, 'amountPaid': amount_paid,
-            'paymentStatus': payment_status, 'transactionId': transaction_id,
-            'customerId': customer_id, 'clientId': client_id,
+            'violationId':   violation_id,
+            'amountPaid':    amount_paid,
+            'paymentStatus': payment_status,
+            'transactionId': transaction_id,
+            'customerId':    customer_id,
+            'clientId':      client_id,
             'accountNumber': account_number
         }).encode('utf-8')
 
         req = urllib.request.Request(
-            url=f"{api_url}/violations/{violation_id}/payment",
-            data=payload, method='POST',
+            url=target_url,
+            data=payload,
+            method='POST',
             headers={
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {api_key}',
+                'Content-Type':     'application/json',
+                'Authorization':    f'Bearer {api_key}',
                 'X-Transaction-Id': transaction_id
             }
         )
-        with urllib.request.urlopen(req, timeout=10) as response:
+
+        with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310 — URL validated by validate_url() above
             body = json.loads(response.read().decode('utf-8'))
             return response.status == 200 and body.get('success', False)
+
+    except ValueError as ve:
+        logger.error(
+            f"URL/input validation failed for violation {violation_id}: {ve}"
+        )
+        return False
     except Exception as e:
-        logger.error(f"API error for {violation_id}: {type(e).__name__}: {str(e)}")
+        logger.error(
+            f"API error for {violation_id}: "
+            f"{type(e).__name__}: {str(e)}"
+        )
         return False
 
 
@@ -317,7 +434,7 @@ def update_violation_dynamodb(
 ):
     """
     Write payment result to DynamoDB.
-    
+
     KEY FIX: Now correctly manages balanceRemaining field.
     - PAID_IN_FULL: sets balanceRemaining = 0, status = PAID
     - PARTIAL_PAYMENT: decrements balanceRemaining, status = PARTIAL
@@ -523,3 +640,12 @@ def apply_partial_payment(
             failed.append(violation_id)
 
     return {'updated': updated, 'failed': failed, 'total_paid': total_paid}
+
+
+def get_slot_value(slots, slot_name):
+    if not slots or slot_name not in slots or slots[slot_name] is None:
+        return None
+    slot = slots[slot_name]
+    if 'value' in slot and slot['value']:
+        return slot['value'].get('interpretedValue', None)
+    return None
