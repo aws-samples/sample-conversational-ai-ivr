@@ -257,10 +257,10 @@ aws cloudformation deploy --region us-east-1 \
 
 ---
 
-### Step 15: Deploy Lambda Code from Local
+### Step 15: Deploy Lambda Code from Local (Script available in the Project root folder)
 
 ```bash
-./scripts/update-lambda-code.sh
+./update-lambda-code.sh
 ```
 
 Verify all 16 functions show ✅ in the final verification table.
