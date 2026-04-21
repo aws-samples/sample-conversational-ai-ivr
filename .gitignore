@@ -43,6 +43,7 @@ cdk.out/
 
 # --- Build Artifacts ---
 *.zip
+!cfn/nested/bootstrap-lambda.zip
 *.tar.gz
 
 # --- Backups ---

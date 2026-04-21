@@ -227,7 +227,7 @@ echo "╚═══════════════════════�
 # 0a. Client Config DynamoDB Table
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-client-config" \
-  "$CFN_DIR/01a-client-config-table.yaml" \
+  "$CFN_DIR/standalone/01a-client-config-table.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT"
 
@@ -235,7 +235,7 @@ deploy_stack "anycompany-ivr-client-config" \
 # 0b. Core DynamoDB Tables (Customers, Violations, Disputes)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-dynamodb" \
-  "$CFN_DIR/01b-dynamodb-tables.yaml" \
+  "$CFN_DIR/standalone/01b-dynamodb-tables.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT"
 
@@ -243,7 +243,7 @@ deploy_stack "anycompany-ivr-dynamodb" \
 # 0c. Session Table + KMS Key (for payment session context)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-session-table" \
-  "$CFN_DIR/01c-session-table.yaml" \
+  "$CFN_DIR/standalone/01c-session-table.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT"
 
@@ -251,7 +251,7 @@ deploy_stack "anycompany-ivr-session-table" \
 # 0d. Tool Lambdas (7 non-payment: lookups, balance, disputes)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-lambdas" \
-  "$CFN_DIR/02a-tool-lambdas.yaml" \
+  "$CFN_DIR/standalone/02a-tool-lambdas.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT" \
     DynamoDBStackName="anycompany-ivr-dynamodb"
@@ -261,7 +261,7 @@ deploy_stack "anycompany-ivr-lambdas" \
 #     Depends on: session-table (01c), dynamodb (01b)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-payments-lambdas" \
-  "$CFN_DIR/02d-payments-lambdas.yaml" \
+  "$CFN_DIR/standalone/02d-payments-lambdas.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT" \
     DynamoDBStackName="anycompany-ivr-dynamodb" \
@@ -271,7 +271,7 @@ deploy_stack "anycompany-ivr-payments-lambdas" \
 # 0f. Fulfillment Code Hook Lambda (QinConnectDialogHook)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-fulfillment-hook" \
-  "$CFN_DIR/02f-fulfillment-hook.yaml" \
+  "$CFN_DIR/standalone/02f-fulfillment-hook.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT"
 
@@ -279,7 +279,7 @@ deploy_stack "anycompany-ivr-fulfillment-hook" \
 # 0g. getCallAttributes Lambda
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-getCallAttributes" \
-  "$CFN_DIR/02b-getCallAttributes.yaml" \
+  "$CFN_DIR/standalone/02b-getCallAttributes.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT" \
     ClientConfigTableName="anycompany-ivr-client-config-${ENVIRONMENT}"
@@ -289,7 +289,7 @@ deploy_stack "anycompany-ivr-getCallAttributes" \
 #     Depends on: tool-lambdas (02a), payments-lambdas (02d)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-api" \
-  "$CFN_DIR/03-api-gateway.yaml" \
+  "$CFN_DIR/standalone/03-api-gateway.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT" \
     LambdaStackName="anycompany-ivr-lambdas" \
@@ -398,7 +398,7 @@ S3_BASE="https://${BUCKET}.s3.${REGION}.amazonaws.com/${PREFIX}"
 # Deploy root nested stack
 # ----------------------------------------------------------
 deploy_stack "$STACK_NAME" \
-  "$CFN_DIR/root.yaml" \
+  "$CFN_DIR/standalone/root.yaml" \
   --parameter-overrides \
     DeployQAgents=false \
     InstanceAlias="$INSTANCE_ALIAS" \
@@ -476,7 +476,7 @@ echo "╚═══════════════════════�
 # Depends on: Connect (Phase 1), session-table (01c), dynamodb (01b)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-payment-handoff" \
-  "$CFN_DIR/02e-payment-handoff-resources.yaml" \
+  "$CFN_DIR/standalone/02e-payment-handoff-resources.yaml" \
   --parameter-overrides \
     Environment="$ENVIRONMENT" \
     ConnectInstanceArn="$CONNECT_INSTANCE_ARN" \
@@ -488,7 +488,7 @@ deploy_stack "anycompany-ivr-payment-handoff" \
 # Depends on: Q Assistant ARN (Phase 1), Connect ARN (Phase 1)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-update-session" \
-  "$CFN_DIR/02c-ConnectAssistantUpdateSessionData.yaml" \
+  "$CFN_DIR/standalone/02c-ConnectAssistantUpdateSessionData.yaml" \
   --parameter-overrides \
     AiAssistantARN="$ASSISTANT_ARN" \
     ConnectInstanceARN="$CONNECT_INSTANCE_ARN"
@@ -498,7 +498,7 @@ deploy_stack "anycompany-ivr-update-session" \
 # Depends on: Connect ARN (Phase 1)
 # ----------------------------------------------------------
 deploy_stack "anycompany-ivr-agent-screen-pop" \
-  "$CFN_DIR/agent-screen-pop-view.yaml" \
+  "$CFN_DIR/standalone/agent-screen-pop-view.yaml" \
   --parameter-overrides \
     ConnectInstanceArn="$CONNECT_INSTANCE_ARN"
 
@@ -585,7 +585,7 @@ echo "    AgentCoreTargetName:   $TARGET_NAME"
 echo "    ToolNamePrefix:        $TOOL_NAME_PREFIX"
 
 deploy_stack "$PHASE2_STACK_NAME" \
-  "$CFN_DIR/qagents-v49.yaml" \
+  "$CFN_DIR/standalone/qagents-v49.yaml" \
   --parameter-overrides \
     InstanceAlias="$INSTANCE_ALIAS" \
     ConnectInstanceArn="$CONNECT_INSTANCE_ARN" \
