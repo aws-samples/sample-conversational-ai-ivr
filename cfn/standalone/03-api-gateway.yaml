@@ -169,7 +169,7 @@ Resources:
       ResourceId: !Ref LookupByPlateResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -235,7 +235,7 @@ Resources:
       ResourceId: !Ref LookupByCitationResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -301,7 +301,7 @@ Resources:
       ResourceId: !Ref LookupByAccountResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -377,7 +377,7 @@ Resources:
       ResourceId: !Ref GetBalanceResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -443,7 +443,7 @@ Resources:
       ResourceId: !Ref GetViolationDetailsResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -519,7 +519,7 @@ Resources:
       ResourceId: !Ref SubmitDisputeResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -588,7 +588,7 @@ Resources:
       ResourceId: !Ref CheckDisputeStatusResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -664,7 +664,7 @@ Resources:
       ResourceId: !Ref BuildCartResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -730,7 +730,7 @@ Resources:
       ResourceId: !Ref InitiatePaymentResource
       HttpMethod: POST
       AuthorizationType: NONE
-      ApiKeyRequired: false
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
