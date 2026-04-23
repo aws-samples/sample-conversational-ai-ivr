@@ -19,30 +19,30 @@ set -euo pipefail
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 REGION="us-east-1"
-ACCOUNT_ID="281131623525"
+ACCOUNT_ID="1234567801"
 
 # Connect & Q
-CONNECT_INSTANCE_ID="ad971816-673f-4457-a5ad-5b39bf2a2b27"
-ASSISTANT_ID="fd8cc08c-eca3-49e1-b55d-a9795dc3c2c3"
+CONNECT_INSTANCE_ID="xxxxx-xxxx-xxxx-xxxx-5b39bf2a2b27"
+ASSISTANT_ID="xxxxx-xxxx-xxxx-xxxx-a9795dc3c2c3"
 
 # Lex Bots
-PARK_AND_TOLL_BOT_ID="8PQSUXB5LD"
-PARK_AND_TOLL_ALIAS_ID="DS5F1WCMAZ"
-PAYMENT_BOT_ID="LYDNXAVQWS"
-PAYMENT_BOT_ALIAS_ID="LNFRGNGZ5K"
+PARK_AND_TOLL_BOT_ID="xxxxxxxxx"
+PARK_AND_TOLL_ALIAS_ID="xxxxxxxxx"
+PAYMENT_BOT_ID="xxxxxxxx"
+PAYMENT_BOT_ALIAS_ID="xxxxxxxx"
 
 # Knowledge Base
-KB_ID="72ac27da-d869-4d6a-bd89-9adf6c60b178"
-KB_ASSOCIATION_ID="8b347868-51e2-46c8-9015-c60c1aa50ad4"
+KB_ID="xxxxxx-xxxxx-xxxxx-xxxxx-9adf6c60b178"
+KB_ASSOCIATION_ID="xxxxxx-xxxx-xxxx-xxxxxx-c60c1aa50ad4"
 
 # AI Agents
-AI_AGENT_1_ID="be3bce9c-5616-4d10-92aa-b789a53ad33a"   # IVRDemo-Agent
-AI_AGENT_2_ID="71365615-9239-43ca-a08c-2fadaa73578f"   # ivrdemo-1-orchestration-agent
+AI_AGENT_1_ID="xxxxx-xxxx-xxxx-xxxx-b789a53ad33a"   # IVRDemo-Agent
+AI_AGENT_2_ID="xxxxxx-xxxxx-xxxx-xxxx-2fadaa73578f"   # ivrdemo-1-orchestration-agent
 
 # S3 Buckets
-CF_TEMPLATES_BUCKET="anycompany-cf-templates-2811"
-KB_BUCKET="anycompany-kb-bucket-2811"
-OPENAPI_BUCKET="anycompany-openapi-bucket"
+CF_TEMPLATES_BUCKET="anycompany-cf-templates-xxxxx"
+KB_BUCKET="anycompany-kb-bucket-xxxxx"
+OPENAPI_BUCKET="anycompany-openapi-xxxxx"
 
 # CloudFormation Stacks (will be deleted in this order — reverse of deployment)
 CFN_STACKS=(
