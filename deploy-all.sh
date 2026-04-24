@@ -5,6 +5,10 @@ export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
 export PYTHONLEGACYWINDOWSSTDIO=0
 
+# Cross-platform temp directory
+TMP_DIR="${TMPDIR:-${TMP:-${TEMP:-/tmp}}}"
+TMP_DIR="${TMP_DIR%/}"
+
 # ==========================================================
 # deploy-all.sh — AnyCompany IVR Complete Deployment
 #
@@ -319,12 +323,12 @@ echo "  Updating openapi.yaml with real API Gateway URL..."
 echo "    Before: $(grep 'url:' "$CFN_DIR/openapi.yaml" | head -1 | xargs)"
 
 sed "s|https://.*execute-api\..*amazonaws\.com/[^ ]*|${API_ENDPOINT}|g" \
-    "$CFN_DIR/openapi.yaml" > "/tmp/openapi-updated.yaml"
+    "$CFN_DIR/openapi.yaml" > "${TMP_DIR}/openapi-updated.yaml"
 
-echo "    After:  $(grep 'url:' "/tmp/openapi-updated.yaml" | head -1 | xargs)"
+echo "    After:  $(grep 'url:' "${TMP_DIR}/openapi-updated.yaml" | head -1 | xargs)"
 
 # Verify the substitution worked
-if ! grep -q "$REST_API_ID" "/tmp/openapi-updated.yaml"; then
+if ! grep -q "$REST_API_ID" "${TMP_DIR}/openapi-updated.yaml"; then
   echo "  ERROR: OpenAPI spec URL substitution failed!"
   echo "  Check the server URL format in $CFN_DIR/openapi.yaml"
   exit 1
@@ -371,7 +375,7 @@ for f in "${NESTED_TEMPLATES[@]}"; do
 done
 
 # Upload the UPDATED openapi.yaml (with real API Gateway URL)
-aws s3 cp "/tmp/openapi-updated.yaml" \
+aws s3 cp "${TMP_DIR}/openapi-updated.yaml" \
     "s3://$OPENAPI_BUCKET/openapi.yaml" --region "$REGION" --quiet
 echo "    ✅ openapi.yaml (updated URL) → s3://$OPENAPI_BUCKET/openapi.yaml"
 

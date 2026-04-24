@@ -17,7 +17,7 @@ Execute these steps after `deploy-all.sh` completes Phase 1 and Phase 1b, **befo
 
 1. Navigate to the **Amazon Connect console**
 2. Select your Connect instance (`anycompany-ivr-demo-2`)
-3. In the left navigation, choose **Applicaton Agents → AI Agents → **Add domain**
+3. In the left navigation, choose **Applicatons → AI Agents → **Add domain**
 4. Select **Use an existing domain**
 5. Choose the domain (<instance_alias>-assistant) from the dropdown and click **Add domain**
 
@@ -64,7 +64,7 @@ aws s3 ls s3://cf-templates-1ioo9aupbz9zw-us-east-1/anycompany-ivr/templates/ope
 The MCP application deployed by automation may not work correctly. Replace it manually:
 
 1. Open **Amazon Connect Console** → **Third-party applications** (left navigation)
-2. **Delete** the existing MCP application that was deployed by automation
+2. **Delete** the existing MCP application (mcp_tools) that was deployed by automation
 3. Click **Add application**
 4. Configure:
    - **Display name:** `anycompany-IVR-mcp`
@@ -78,9 +78,10 @@ The MCP application deployed by automation may not work correctly. Replace it ma
 
 ### Step 5: Create Admin User
 
-Run the admin user creation script:
+Run the admin user creation script: Make sure to update the env.sh with the connect Instance ID creaated earlier.
 
 ```bash
+source env.sh
 # NOTE: Replace 'python3' with 'python' if that is the command in your environment.
 # Run 'python3 --version' or 'python --version' to confirm which is available.
 python3 scripts/utilities/create_connect_admin.py \
@@ -159,21 +160,23 @@ Execute these steps after Phase 2 (`anycompany-ivr-phase2-qagents`) completes.
 2. Select the **security profile:** `ParkandToll-AI-Agent` (created in Step 6)
 3. **Save** your AI Agent to apply the security profile
 
-**Add the AI Prompt:**
+**Create the AI Prompt**
 
-1. Navigate to the agent's **Prompt** section
-2. Edit the AI Prompt and replace it with the content from `ai-agent/Final-System-Prompt-03242026_1230.txt`
-3. Click **Save** then **Publish**
-4. Go back to the Agent → **Add Prompt** → **Add existing AI Prompt** → select the v2 prompt you just saved and published
-5. Create AI Prompt → Name - **IVRDemo-AI-Agent-System-Prompt**
-6. Description - **System Prompt for AI Agent** 
-7. Click **Create**
-8. Once created, Edit the AI Prompt and replace it with the content from `ai-agent/Final-System-Prompt-03242026_1230.txt`
-9. Click **Save** and then **Publish**
-10. Go back to **AI agent designer**, select the agent created earlier and click **Edit in Agent Builder**
-11. Navigate to **Promppt** section and click **Add Prompt**
-12. Select **Add existing AI Prompt** and select the one create earlier
-13. Click **Add** and then **Save**
+1. In the Connect Admin interface, click **AI agent designer** in the left navigation
+2. Click **AI prompts** to view AI agents
+3. Click **Create AI Prompt**
+4. Configure:
+   - **Name:** `IVRDemo-AI-Agent-System-Prompt`
+   - **AI Prompt type** `Orchestration`
+   - **Description:** `System Prompt for AI Agent`
+5. Click **Create**
+6. Once created, Edit the AI Prompt and replace it with the content from `ai-agent/Final-System-Prompt-03242026_1230.txt`
+7. Click **Save** and then **Publish**
+8. Go back to **AI agent designer**, select the agent created earlier and click **Edit in Agent Builder**
+9. Navigate to **Promppt** section and click **Add Prompt**
+10. Select **Add existing AI Prompt** and select the one created earlier
+11. Click **Add** and then **Save**
+
 
 **Add MCP Tools:**
 
@@ -269,8 +272,10 @@ Note the Bot ID and Alias ID from the output (also saved to `payment-bot-config.
 ### Step 13: Redeploy Payment Handoff Stack with Real Bot IDs
 
 The `02e` stack was deployed with `PENDING` bot IDs. Redeploy with real values:
+Make sure CONNECT_INSTANCE_ID is updated in env.sh
 
 ```bash
+source env.sh
 # NOTE: Replace 'python3' with 'python' if that is the command in your environment.
 BOT_ID=$(python3 -c "import json; print(json.load(open('payment-bot-config.json'))['botId'])")
 ALIAS_ID=$(python3 -c "import json; print(json.load(open('payment-bot-config.json'))['botAliasId'])")

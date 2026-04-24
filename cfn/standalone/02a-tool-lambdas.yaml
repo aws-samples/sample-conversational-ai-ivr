@@ -269,68 +269,17 @@ Resources:
   # ===========================================
   # LAMBDA PERMISSIONS
   # ===========================================
-  # CHANGED: These tools are invoked via API Gateway (not Bedrock directly)
-  # AgentCore Gateway → API Gateway → Lambda
-  # Keep Bedrock permissions for future direct invocation compatibility
-  # ADD API Gateway permissions
+  # ===========================================
+  # API GATEWAY PERMISSIONS
+  # ===========================================
+  # NOTE: API Gateway invoke permissions with scoped SourceArn are defined
+  # in 03-api-gateway.yaml (e.g., LookupByPlateLambdaPermission), which
+  # restricts each Lambda to its specific API + method + path.
+  # No permissive wildcard permissions are needed here.
 
-  LookupByPlateApiGwPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref LookupByPlateFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
-
-  LookupByCitationApiGwPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref LookupByCitationFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
-
-  LookupByAccountApiGwPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref LookupByAccountFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
-
-  GetBalanceApiGwPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref GetBalanceFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
-
-  GetViolationDetailsApiGwPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref GetViolationDetailsFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
-
-  SubmitDisputeApiGwPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref SubmitDisputeFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
-
-  CheckDisputeStatusApiGwPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref CheckDisputeStatusFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
-
-  # Keep Bedrock permissions as well (belt and suspenders)
+  # ===========================================
+  # BEDROCK PERMISSIONS
+  # ===========================================
   LookupByPlateBedrockPermission:
     Type: AWS::Lambda::Permission
     Properties:
